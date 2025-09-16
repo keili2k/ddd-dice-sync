@@ -1,4 +1,4 @@
-// sync-client-netlify.js - Netlify Functions Sync Client (ohne WebSocket)
+// sync-client.js - Netlify Functions Sync Client (für ddd-dice-sync.netlify.app)
 class DDDSyncClient {
   constructor(serverUrl = null) {
     // Automatische Server-URL Erkennung für Netlify Functions
@@ -7,8 +7,8 @@ class DDDSyncClient {
         // Lokale Entwicklung mit Netlify Dev
         this.serverUrl = 'http://localhost:8888/.netlify/functions/sync';
       } else {
-        // Production auf Netlify
-        this.serverUrl = `${window.location.origin}/.netlify/functions/sync`;
+        // Production auf Netlify - aktualisiert für Ihre neue URL
+        this.serverUrl = `https://ddd-dice-sync.netlify.app/.netlify/functions/sync`;
       }
     } else {
       this.serverUrl = serverUrl;
@@ -30,6 +30,11 @@ class DDDSyncClient {
     this.onError = null;
     
     console.log('DDD Netlify Sync Client initialized with URL:', this.serverUrl);
+    this.init();
+  }
+
+  init() {
+    // Starte sofort mit Verbindungstest
     this.testConnection();
   }
 
@@ -37,20 +42,32 @@ class DDDSyncClient {
     this.updateStatus('connecting', 'Teste Serververbindung...');
     
     try {
-      const response = await fetch(this.serverUrl + '/health');
+      const response = await fetch(this.serverUrl + '/health', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
       if (response.ok) {
         const data = await response.json();
         console.log('Server health check successful:', data);
         this.isConnected = true;
         this.updateStatus('online', 'Bereit für Synchronisation');
       } else {
-        throw new Error(`Server responded with ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(`Server responded with ${response.status}: ${errorText}`);
       }
     } catch (error) {
       console.error('Server connection test failed:', error);
       this.isConnected = false;
       this.updateStatus('offline', 'Server nicht erreichbar');
       this.handleError('Server nicht verfügbar: ' + error.message);
+      
+      // Retry nach 5 Sekunden
+      setTimeout(() => {
+        this.testConnection();
+      }, 5000);
     }
   }
 
@@ -463,4 +480,4 @@ if (typeof window !== 'undefined') {
   window.QRCodeGenerator = QRCodeGenerator;
   window.URLHelper = URLHelper;
   window.ClipboardHelper = ClipboardHelper;
-                    }
+                     }
