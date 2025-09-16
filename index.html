@@ -1,263 +1,4 @@
-// Timer-Funktionalität
-    let countdownTimer = null;
-    let remainingTime = 0;
-    let isTimerRunning = false;
-
-    // Synchronisation Client
-    let syncClient = null;
-
-    // Initialisiere Sync Client
-    function initSyncClient() {
-      // Server URL - in Produktion anpassen
-      const serverUrl = window.location.protocol === 'https:' ? 
-        'wss://your-sync-server.com' : 
-        'ws://localhost:3001';
-      
-      syncClient = new DDDSyncClient(serverUrl);
-      
-      // Event Callbacks setzen
-      syncClient.onStatusChange = updateSyncStatus;
-      syncClient.onRoomUpdate = updateRoomInfo;
-      syncClient.onDiceReceived = receiveSyncedRoll;
-      syncClient.onTimerSync = receiveSyncedTimer;
-      syncClient.onError = handleSyncError;
-    }
-
-    function updateSyncStatus(status, text) {
-      const indicator = document.getElementById('statusIndicator');
-      const statusText = document.getElementById('statusText');
-      
-      if (indicator && statusText) {
-        indicator.className = `status-indicator ${status}`;
-        statusText.textContent = text;
-      }
-    }
-
-    function updateRoomInfo(roomData) {
-      if (roomData.roomId) {
-        document.getElementById('currentRoomId').textContent = roomData.roomId;
-        document.getElementById('participantCount').textContent = roomData.participantCount;
-        document.getElementById('roomInfo').style.display = 'block';
-        addSyncIndicator();
-        showQRCode(roomData.roomId);
-      } else {
-        document.getElementById('roomInfo').style.display = 'none';
-        document.getElementById('qrSection').style.display = 'none';
-        removeSyncIndicator();
-      }
-    }
-
-    function receiveSyncedRoll(values) {
-      console.log('Received synced roll:', values);
-      displayRoll(values);
-    }
-
-    function receiveSyncedTimer(timerState) {
-      console.log('Received synced timer:', timerState);
-      
-      if (timerState.isRunning && !isTimerRunning) {
-        // Starte Timer synchronisiert
-        remainingTime = timerState.remainingTime;
-        isTimerRunning = true;
-        document.getElementById('startTimer').disabled = true;
-        document.getElementById('stopTimer').disabled = false;
-        
-        if (countdownTimer) clearInterval(countdownTimer);
-        countdownTimer = setInterval(() => {
-          remainingTime--;
-          updateCountdownDisplay();
-          
-          if (remainingTime <= 0) {
-            clearInterval(countdownTimer);
-            isTimerRunning = false;
-            document.getElementById('startTimer').disabled = false;
-            document.getElementById('stopTimer').disabled = true;
-          }
-        }, 1000);
-        
-      } else if (!timerState.isRunning && isTimerRunning) {
-        // Stoppe Timer synchronisiert
-        stopTimer();
-      }
-    }
-
-    function handleSyncError(error) {
-      console.error('Sync error:', error);
-      updateSyncStatus('offline', 'Synchronisationsfehler');
-    }
-
-    function createRoom() {
-      if (!syncClient) {
-        initSyncClient();
-        setTimeout(createRoom, 2000);
-        return;
-      }
-      
-      syncClient.createRoom().then(response => {
-        console.log('Room created:', response);
-      }).catch(error => {
-        alert('Raum konnte nicht erstellt werden: ' + error.message);
-      });
-    }
-
-    function joinRoom() {
-      const roomId = document.getElementById('roomIdInput').value.trim();
-      if (!roomId || roomId.length !== 6) {
-        alert('Bitte geben Sie eine gültige 6-stellige Raum-ID ein.');
-        return;
-      }
-      
-      if (!syncClient) {
-        initSyncClient();
-        setTimeout(() => joinRoom(), 2000);
-        return;
-      }
-      
-      syncClient.joinRoom(roomId).then(response => {
-        console.log('Joined room:', response);
-        document.getElementById('roomIdInput').value = '';
-      }).catch(error => {
-        alert('Raum beitreten fehlgeschlagen: ' + error.message);
-      });
-    }
-
-    function leaveRoom() {
-      if (syncClient) {
-        syncClient.leaveRoom();
-      }
-      document.getElementById('roomInfo').style.display = 'none';
-      document.getElementById('qrSection').style.display = 'none';
-      removeSyncIndicator();
-    }
-
-    function showQRCode(roomId) {
-      const qrSection = document.getElementById('qrSection');
-      const qrContainer = document.getElementById('qrCode');
-      
-      const joinUrl = QRCodeGenerator    /* Mobile Anpassungen */
-    @media (max-width: 768px) {
-      body {
-        margin: 1em;
-      }
-      
-      .header-controls {
-        flex-direction: column;
-        align-items: stretch;
-      }
-      
-      .left-controls {
-        justify-content: center;
-      }
-      
-      .menu-button {
-        align-self: flex-end;
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 1001;
-      }
-      
-      .menu-content {
-        width: 95%;
-        padding: 20px;
-        max-height: 85vh;
-      }
-      
-      .countdown-controls {
-        flex-direction: column;
-        gap: 10px;
-      }
-      
-      .countdown-display {
-        font-size: 36px;
-      }
-      
-      .dice-row {
-        gap: 12px;
-      }
-      
-      .scene, .dice {
-        width: 48px;
-        height: 48px;
-      }
-      
-      .face {
-        width: 48px;
-        height: 48px;
-        font-size: 16px;
-      }
-      
-      .front  { transform: rotateY(0deg)   translateZ(24px); }
-      .back   { transform: rotateY(180deg) translateZ(24px); }
-      .right  { transform: rotateY(90deg)  translateZ(24px); }
-      .left   { transform: rotateY(-90deg) translateZ(24px); }
-      .top    { transform: rotateX(90deg)  translateZ(24px); }
-      .bottom { transform: rotateX(-90deg) translateZ(24px); }
-      
-      .mini-dice {
-        width: 48px;
-        height: 48px;
-        margin: 0 4px;
-      }
-      
-      .mini-dice .pip {
-        width: 8px;
-        height: 8px;
-      }
-      
-      .pair-display {
-        gap: 8px;
-      }
-      
-      .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-      
-      #result {
-        max-width: 100%;
-      }
-      
-      .pair-line {
-        flex-direction: column;
-        gap: 10px;
-        text-align: center;
-      }
-      
-      .sum-display {
-        font-size: 18px;
-        min-width: auto;
-      }
-      
-      .join-controls {
-        flex-direction: column;
-      }
-      
-      #roomIdInput {
-        margin-bottom: 10px;
-      }
-      
-      .room-id {
-        justify-content: center;
-        text-align: center;
-      }
-      
-      .dice-row.synced::before {
-        font-size: 10px;
-        padding: 2px 8px;
-      }
-    }
-    
-    /* Slide-in Animation für Benachrichtigungen */
-    @keyframes slideIn {
-      from {
-        transform: translateX(100%);
-        opacity: 0;
-      }
-      to {
-        transform: translateX(0);
-        opacity: 1;
-      }
-    }<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
@@ -755,10 +496,384 @@
       animation: blink 1s infinite;
     }
 
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0.3; }
+    }
+
+    /* Header Controls */
+    .header-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .left-controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .menu-button {
+      background: #6f42c1;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      width: 50px;
+      height: 50px;
+      font-size: 24px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      z-index: 1000;
+    }
+
+    .menu-button:hover {
+      background: #5a2d8b;
+      transform: rotate(90deg);
+    }
+
+    body.dark .menu-button {
+      background: #9f7aea;
+    }
+
+    body.dark .menu-button:hover {
+      background: #805ad5;
+    }
+
+    /* Menu Overlay */
+    .menu-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(5px);
+      z-index: 10000;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .menu-overlay.show {
+      display: flex;
+      opacity: 1;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .menu-content {
+      background: white;
+      border-radius: 20px;
+      padding: 30px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      transform: scale(0.8);
+      transition: transform 0.3s ease;
+    }
+
+    .menu-overlay.show .menu-content {
+      transform: scale(1);
+    }
+
+    body.dark .menu-content {
+      background: #2d3748;
+      color: #e2e8f0;
+    }
+
+    .menu-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 15px;
+    }
+
+    body.dark .menu-header {
+      border-bottom-color: #4a5568;
+    }
+
+    .close-button {
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      font-size: 20px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .close-button:hover {
+      background: #c82333;
+      transform: rotate(90deg);
+    }
+
+    /* Sync Status */
+    .sync-status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 15px;
+      border-radius: 10px;
+      background: #f8f9fa;
+      margin-bottom: 20px;
+      font-weight: 600;
+    }
+
+    body.dark .sync-status {
+      background: #4a5568;
+    }
+
+    .status-indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    .status-indicator.offline {
+      background: #6c757d;
+    }
+
+    .status-indicator.connecting {
+      background: #ffc107;
+    }
+
+    .status-indicator.online {
+      background: #28a745;
+    }
+
+    /* Room Controls */
+    .room-section {
+      margin-bottom: 25px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 12px;
+      border-left: 4px solid #6f42c1;
+    }
+
+    body.dark .room-section {
+      background: #4a5568;
+      border-left-color: #9f7aea;
+    }
+
+    .room-section h4 {
+      margin-bottom: 15px;
+      color: #495057;
+    }
+
+    body.dark .room-section h4 {
+      color: #e2e8f0;
+    }
+
+    .join-controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    #roomIdInput {
+      flex: 1;
+      padding: 12px;
+      border: 2px solid #6f42c1;
+      border-radius: 8px;
+      font-size: 16px;
+      text-transform: uppercase;
+      text-align: center;
+      font-weight: bold;
+      letter-spacing: 2px;
+    }
+
+    body.dark #roomIdInput {
+      background: #2d3748;
+      color: #e2e8f0;
+      border-color: #9f7aea;
+    }
+
+    .sync-button {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+    }
+
+    .sync-button.primary {
+      background: #28a745;
+      color: white;
+    }
+
+    .sync-button.primary:hover {
+      background: #218838;
+      transform: translateY(-2px);
+    }
+
+    .sync-button.danger {
+      background: #dc3545;
+      color: white;
+    }
+
+    .sync-button.danger:hover {
+      background: #c82333;
+      transform: translateY(-2px);
+    }
+
+    .sync-button:not(.primary):not(.danger) {
+      background: #6f42c1;
+      color: white;
+    }
+
+    .sync-button:not(.primary):not(.danger):hover {
+      background: #5a2d8b;
+      transform: translateY(-2px);
+    }
+
+    /* Room Info */
+    .room-info {
+      background: #e7f5e7;
+      border-left-color: #28a745 !important;
+    }
+
+    body.dark .room-info {
+      background: #2d5a3d;
+    }
+
+    .room-details {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .room-id {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .copy-button {
+      background: #17a2b8;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 10px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+
+    .copy-button:hover {
+      background: #138496;
+    }
+
+    /* QR Code */
+    .qr-section {
+      background: #e3f2fd;
+      border-left-color: #2196f3 !important;
+      text-align: center;
+    }
+
+    body.dark .qr-section {
+      background: #1e3a5f;
+    }
+
+    .qr-code-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 200px;
+      background: white;
+      border-radius: 10px;
+      margin: 15px 0;
+      padding: 20px;
+    }
+
+    body.dark .qr-code-container {
+      background: #f8f9fa;
+    }
+
+    .qr-info {
+      font-size: 14px;
+      color: #6c757d;
+      margin: 0;
+    }
+
+    body.dark .qr-info {
+      color: #a0aec0;
+    }
+
+    /* Connected Indicator */
+    .dice-row.synced {
+      border: 3px solid #28a745;
+      border-radius: 15px;
+      padding: 15px;
+      background: rgba(40, 167, 69, 0.05);
+      position: relative;
+    }
+
+    .dice-row.synced::before {
+      content: "🔗 SYNCHRONISIERT";
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #28a745;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    body.dark .dice-row.synced {
+      border-color: #48bb78;
+      background: rgba(72, 187, 120, 0.1);
+    }
+
+    body.dark .dice-row.synced::before {
+      background: #48bb78;
+    }
+
     /* Mobile Anpassungen */
     @media (max-width: 768px) {
       body {
         margin: 1em;
+      }
+      
+      .header-controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .left-controls {
+        justify-content: center;
+      }
+      
+      .menu-button {
+        align-self: flex-end;
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1001;
+      }
+      
+      .menu-content {
+        width: 95%;
+        padding: 20px;
+        max-height: 85vh;
       }
       
       .countdown-controls {
@@ -824,6 +939,36 @@
       .sum-display {
         font-size: 18px;
         min-width: auto;
+      }
+      
+      .join-controls {
+        flex-direction: column;
+      }
+      
+      #roomIdInput {
+        margin-bottom: 10px;
+      }
+      
+      .room-id {
+        justify-content: center;
+        text-align: center;
+      }
+      
+      .dice-row.synced::before {
+        font-size: 10px;
+        padding: 2px 8px;
+      }
+    }
+    
+    /* Slide-in Animation für Benachrichtigungen */
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
       }
     }
   </style>
@@ -1166,210 +1311,184 @@
       return `<div class="${classes}">${pipHTML}</div>`;
     }
 
-    function rollAndCalc() {
-      const values = rollValues(5);
-      lastValues = values;
-
-      ['d1','d2','d3','d4','dice5'].forEach((id, idx) => animateDiceToValue(id, values[idx]));
-
-      document.getElementById("values").textContent = "Ergebnisse: " + values.join(", ");
-      document.getElementById("values").style.display = "block";
-
-      const arr4 = values.slice(0,4);
-      const arr5 = values.slice();
-      const splits4 = getSplits(arr4);
-      const set4    = new Set(splits4.map(s => s.key));
-      const splits5all = getSplits(arr5);
-
-      lastSplits5unique = splits5all.filter(s => {
-        const uses5 = s.idx.pair1.includes(4) || s.idx.pair2.includes(4);
-        return uses5 && !set4.has(s.key);
-      });
-
-      // Statistiken anzeigen
-      const totalCombinations4 = 6 ** 4;
-      const totalCombinations5 = 6 ** 5;
-      
-      document.getElementById("stats").innerHTML = `
-        <div class="stats-panel">
-          <h3>📊 Statistiken</h3>
-          <div class="stats-grid">
-            <div class="stat-item">
-              <span class="stat-value">${splits4.length}</span>
-              <div class="stat-label">Gefundene Paare (4 Würfel)</div>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value">${lastSplits5unique.length}</span>
-              <div class="stat-label">Zusätzliche Paare (5. Würfel)</div>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value">${totalCombinations4}</span>
-              <div class="stat-label">Mögliche 4-Würfel Kombinationen</div>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value">${totalCombinations5}</span>
-              <div class="stat-label">Mögliche 5-Würfel Kombinationen</div>
-            </div>
-          </div>
-        </div>
-      `;
-
-      document.getElementById("list1").innerHTML =
-        '<div class="section-title">🎯 Liste 1 (nur Würfel 1–4)</div>' + 
-        formatSplitsWithProbability(splits4, allPossibleSplits4);
-
-      updateFifthDisplay();
-    }
-
-    document.getElementById("toggleFifth").addEventListener("change", updateFifthDisplay);
-
-    function updateFifthDisplay() {
-      const list2 = document.getElementById("list2");
-      const showFifth = !document.getElementById("toggleFifth").checked;
-
-      if (showFifth && lastSplits5unique.length > 0) {
-        list2.innerHTML =
-          '<div class="section-title">🎲 Liste 2 (zusätzlich durch Würfel 5)</div>' +
-          formatSplitsWithProbability(lastSplits5unique, allPossibleSplits5);
-        list2.classList.add("show");
-      } else {
-        list2.classList.remove("show");
-        list2.innerHTML = "";
-      }
-    }
-
-    document.getElementById("toggleDark").addEventListener("click", () => {
-      document.body.classList.toggle("dark");
-
-      const btn = document.getElementById("toggleDark");
-      if (document.body.classList.contains("dark")) {
-        btn.textContent = "🌞 Darkmode deaktivieren";
-      } else {
-        btn.textContent = "🌙 Darkmode aktivieren";
-      }
-    });
-
     // Timer-Funktionalität
     let countdownTimer = null;
     let remainingTime = 0;
     let isTimerRunning = false;
 
-    // Synchronisation
-    let isConnected = false;
-    let currentRoomId = null;
-    let ws = null;
-    let participantCount = 0;
+    // Synchronisation Client
+    let syncClient = null;
 
-    // QR Code Library (einfache Implementation)
-    function generateQRCode(text, container) {
-      // Verwende qr-server.com API für QR-Code Generation
-      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(text)}`;
-      container.innerHTML = `<img src="${qrUrl}" alt="QR Code" style="max-width: 100%; height: auto; border-radius: 8px;">`;
-    }
-
-    // WebSocket Verbindung (Simulation für Demo)
-    function connectToServer() {
-      // In einer echten Implementierung würde hier eine WebSocket-Verbindung zu einem Server aufgebaut
-      // Für diese Demo simulieren wir die Verbindung
-      updateSyncStatus('connecting', 'Verbinde...');
+    // Initialisiere Sync Client
+    function initSyncClient() {
+      // Überprüfe ob sync-client.js geladen wurde
+      if (typeof DDDSyncClient === 'undefined') {
+        console.warn('sync-client.js nicht gefunden - lokaler Modus');
+        return;
+      }
       
-      setTimeout(() => {
-        isConnected = true;
-        updateSyncStatus('online', 'Bereit für Synchronisation');
-      }, 1000);
+      // Server URL - in Produktion anpassen
+      const serverUrl = window.location.protocol === 'https:' ? 
+        'wss://your-sync-server.com' : 
+        'ws://localhost:3001';
+      
+      syncClient = new DDDSyncClient(serverUrl);
+      
+      // Event Callbacks setzen
+      syncClient.onStatusChange = updateSyncStatus;
+      syncClient.onRoomUpdate = updateRoomInfo;
+      syncClient.onDiceReceived = receiveSyncedRoll;
+      syncClient.onTimerSync = receiveSyncedTimer;
+      syncClient.onError = handleSyncError;
     }
 
     function updateSyncStatus(status, text) {
       const indicator = document.getElementById('statusIndicator');
       const statusText = document.getElementById('statusText');
       
-      indicator.className = `status-indicator ${status}`;
-      statusText.textContent = text;
+      if (indicator && statusText) {
+        indicator.className = `status-indicator ${status}`;
+        statusText.textContent = text;
+      }
+    }
+
+    function updateRoomInfo(roomData) {
+      if (roomData.roomId) {
+        document.getElementById('currentRoomId').textContent = roomData.roomId;
+        document.getElementById('participantCount').textContent = roomData.participantCount;
+        document.getElementById('roomInfo').style.display = 'block';
+        addSyncIndicator();
+        showQRCode(roomData.roomId);
+      } else {
+        document.getElementById('roomInfo').style.display = 'none';
+        document.getElementById('qrSection').style.display = 'none';
+        removeSyncIndicator();
+      }
+    }
+
+    function receiveSyncedRoll(values) {
+      console.log('Received synced roll:', values);
+      displayRoll(values);
+    }
+
+    function receiveSyncedTimer(timerState) {
+      console.log('Received synced timer:', timerState);
+      
+      if (timerState.isRunning && !isTimerRunning) {
+        // Starte Timer synchronisiert
+        remainingTime = timerState.remainingTime;
+        isTimerRunning = true;
+        document.getElementById('startTimer').disabled = true;
+        document.getElementById('stopTimer').disabled = false;
+        
+        if (countdownTimer) clearInterval(countdownTimer);
+        countdownTimer = setInterval(() => {
+          remainingTime--;
+          updateCountdownDisplay();
+          
+          if (remainingTime <= 0) {
+            clearInterval(countdownTimer);
+            isTimerRunning = false;
+            document.getElementById('startTimer').disabled = false;
+            document.getElementById('stopTimer').disabled = true;
+          }
+        }, 1000);
+        
+      } else if (!timerState.isRunning && isTimerRunning) {
+        // Stoppe Timer synchronisiert
+        stopTimer();
+      }
+    }
+
+    function handleSyncError(error) {
+      console.error('Sync error:', error);
+      updateSyncStatus('offline', 'Synchronisationsfehler');
     }
 
     function createRoom() {
-      if (!isConnected) {
-        connectToServer();
-        setTimeout(createRoom, 1500);
+      if (!syncClient) {
+        initSyncClient();
+        setTimeout(createRoom, 2000);
         return;
       }
       
-      // Generiere eine zufällige 6-stellige Raum-ID
-      currentRoomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-      participantCount = 1;
-      
-      updateRoomInfo();
-      showQRCode();
-      addSyncIndicator();
-      
-      updateSyncStatus('online', `Raum ${currentRoomId} erstellt`);
+      syncClient.createRoom().then(response => {
+        console.log('Room created:', response);
+      }).catch(error => {
+        alert('Raum konnte nicht erstellt werden: ' + error.message);
+      });
     }
 
     function joinRoom() {
-      const roomId = document.getElementById('roomIdInput').value.trim().toUpperCase();
+      const roomId = document.getElementById('roomIdInput').value.trim();
       if (!roomId || roomId.length !== 6) {
         alert('Bitte geben Sie eine gültige 6-stellige Raum-ID ein.');
         return;
       }
       
-      if (!isConnected) {
-        connectToServer();
-        setTimeout(() => joinRoom(), 1500);
+      if (!syncClient) {
+        initSyncClient();
+        setTimeout(() => joinRoom(), 2000);
         return;
       }
       
-      currentRoomId = roomId;
-      participantCount = Math.floor(Math.random() * 5) + 2; // Simuliere 2-6 Teilnehmer
-      
-      updateRoomInfo();
-      addSyncIndicator();
-      
-      updateSyncStatus('online', `Raum ${currentRoomId} beigetreten`);
-      
-      // Simuliere synchronisierte Würfelwerte von anderen Teilnehmern
-      setTimeout(() => {
-        if (Math.random() > 0.7) {
-          receiveSyncedRoll([3, 6, 2, 4, 1]);
-        }
-      }, 3000);
+      syncClient.joinRoom(roomId).then(response => {
+        console.log('Joined room:', response);
+        document.getElementById('roomIdInput').value = '';
+      }).catch(error => {
+        alert('Raum beitreten fehlgeschlagen: ' + error.message);
+      });
     }
 
     function leaveRoom() {
-      currentRoomId = null;
-      participantCount = 0;
+      if (syncClient) {
+        syncClient.leaveRoom();
+      }
       document.getElementById('roomInfo').style.display = 'none';
       document.getElementById('qrSection').style.display = 'none';
       removeSyncIndicator();
-      
-      updateSyncStatus('online', 'Bereit für Synchronisation');
     }
 
-    function updateRoomInfo() {
-      document.getElementById('currentRoomId').textContent = currentRoomId;
-      document.getElementById('participantCount').textContent = participantCount;
-      document.getElementById('roomInfo').style.display = 'block';
-    }
-
-    function showQRCode() {
+    function showQRCode(roomId) {
       const qrSection = document.getElementById('qrSection');
       const qrContainer = document.getElementById('qrCode');
       
-      // URL für andere zum Beitreten (in echter App wäre das eine Deep-Link URL)
-      const joinUrl = `${window.location.origin}${window.location.pathname}?room=${currentRoomId}`;
-      generateQRCode(joinUrl, qrContainer);
-      
-      qrSection.style.display = 'block';
+      if (typeof QRCodeGenerator !== 'undefined') {
+        const joinUrl = QRCodeGenerator.generateJoinURL(roomId);
+        QRCodeGenerator.generate(joinUrl, qrContainer);
+        qrSection.style.display = 'block';
+      } else {
+        // Fallback ohne QR-Code Generator
+        qrContainer.innerHTML = '<p>QR-Code Generator nicht verfügbar</p>';
+        qrSection.style.display = 'block';
+      }
     }
 
     function copyRoomId() {
-      navigator.clipboard.writeText(currentRoomId).then(() => {
-        const btn = document.getElementById('copyRoomId');
-        const oldText = btn.textContent;
-        btn.textContent = '✓';
-        setTimeout(() => {
-          btn.textContent = oldText;
-        }, 1000);
-      });
+      const roomId = document.getElementById('currentRoomId').textContent;
+      
+      if (typeof ClipboardHelper !== 'undefined') {
+        ClipboardHelper.copy(roomId).then(success => {
+          const btn = document.getElementById('copyRoomId');
+          const oldText = btn.textContent;
+          btn.textContent = success ? '✓' : '✗';
+          setTimeout(() => {
+            btn.textContent = oldText;
+          }, 1000);
+        });
+      } else {
+        // Fallback
+        navigator.clipboard.writeText(roomId).then(() => {
+          const btn = document.getElementById('copyRoomId');
+          const oldText = btn.textContent;
+          btn.textContent = '✓';
+          setTimeout(() => {
+            btn.textContent = oldText;
+          }, 1000);
+        }).catch(() => {
+          alert('Kopieren fehlgeschlagen');
+        });
+      }
     }
 
     function addSyncIndicator() {
@@ -1378,110 +1497,6 @@
 
     function removeSyncIndicator() {
       document.querySelector('.dice-row').classList.remove('synced');
-    }
-
-    // Synchronisierte Funktionen
-    function syncedRollAndCalc() {
-      if (currentRoomId) {
-        // In echter Implementierung: Sende Roll-Event an Server
-        const values = rollValues(5);
-        broadcastRoll(values);
-        displayRoll(values);
-      } else {
-        rollAndCalc();
-      }
-    }
-
-    function broadcastRoll(values) {
-      // Simuliere das Senden an andere Clients
-      console.log(`Broadcasting roll to room ${currentRoomId}:`, values);
-      // In echter App: ws.send(JSON.stringify({type: 'roll', values, roomId: currentRoomId}));
-    }
-
-    function receiveSyncedRoll(values) {
-      console.log('Received synced roll:', values);
-      displayRoll(values);
-      
-      // Zeige kurz eine Benachrichtigung
-      const notification = document.createElement('div');
-      notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: #28a745;
-        color: white;
-        padding: 15px 20px;
-        border-radius: 10px;
-        font-weight: bold;
-        z-index: 10001;
-        animation: slideIn 0.3s ease;
-      `;
-      notification.textContent = '🎲 Synchronisierter Wurf erhalten!';
-      document.body.appendChild(notification);
-      
-      setTimeout(() => {
-        notification.remove();
-      }, 3000);
-    }
-
-    function displayRoll(values) {
-      lastValues = values;
-      ['d1','d2','d3','d4','dice5'].forEach((id, idx) => animateDiceToValue(id, values[idx]));
-      
-      document.getElementById("values").textContent = "Ergebnisse: " + values.join(", ");
-      document.getElementById("values").style.display = "block";
-
-      const arr4 = values.slice(0,4);
-      const arr5 = values.slice();
-      const splits4 = getSplits(arr4);
-      const set4 = new Set(splits4.map(s => s.key));
-      const splits5all = getSplits(arr5);
-
-      lastSplits5unique = splits5all.filter(s => {
-        const uses5 = s.idx.pair1.includes(4) || s.idx.pair2.includes(4);
-        return uses5 && !set4.has(s.key);
-      });
-
-      // Statistiken anzeigen
-      const totalCombinations4 = 6 ** 4;
-      const totalCombinations5 = 6 ** 5;
-      
-      document.getElementById("stats").innerHTML = `
-        <div class="stats-panel">
-          <h3>📊 Statistiken</h3>
-          <div class="stats-grid">
-            <div class="stat-item">
-              <span class="stat-value">${splits4.length}</span>
-              <div class="stat-label">Gefundene Paare (4 Würfel)</div>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value">${lastSplits5unique.length}</span>
-              <div class="stat-label">Zusätzliche Paare (5. Würfel)</div>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value">${totalCombinations4}</span>
-              <div class="stat-label">Mögliche 4-Würfel Kombinationen</div>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value">${totalCombinations5}</span>
-              <div class="stat-label">Mögliche 5-Würfel Kombinationen</div>
-            </div>
-          </div>
-        </div>
-      `;
-
-      document.getElementById("list1").innerHTML =
-        '<div class="section-title">🎯 Liste 1 (nur Würfel 1–4)</div>' + 
-        formatSplitsWithProbability(splits4, allPossibleSplits4);
-
-      updateFifthDisplay();
-    }
-
-    function syncTimer(action, time) {
-      if (!currentRoomId) return;
-      
-      // In echter App würde hier der Timer-Status synchronisiert
-      console.log(`Syncing timer: ${action} with time: ${time}`);
     }
 
     function formatTime(seconds) {
@@ -1544,7 +1559,15 @@
       remainingTime = selectedTime;
       isTimerRunning = true;
       
-      syncTimer('start', selectedTime);
+      // Synchronisiere Timer falls verbunden
+      if (syncClient && syncClient.currentRoomId) {
+        syncClient.syncTimer({
+          isRunning: true,
+          remainingTime: remainingTime,
+          duration: selectedTime,
+          startTime: Date.now()
+        });
+      }
       
       document.getElementById('startTimer').disabled = true;
       document.getElementById('stopTimer').disabled = false;
@@ -1568,7 +1591,15 @@
       isTimerRunning = false;
       remainingTime = 0;
       
-      syncTimer('stop', 0);
+      // Synchronisiere Timer-Stop falls verbunden
+      if (syncClient && syncClient.currentRoomId) {
+        syncClient.syncTimer({
+          isRunning: false,
+          remainingTime: 0,
+          duration: 0,
+          startTime: null
+        });
+      }
       
       document.getElementById('startTimer').disabled = false;
       document.getElementById('stopTimer').disabled = true;
@@ -1576,6 +1607,87 @@
       document.getElementById('countdownDisplay').className = 'countdown-display';
       document.getElementById('timerStatus').textContent = 'Timer bereit';
       document.getElementById('timerStatus').className = 'timer-status';
+    }
+
+    function displayRoll(values) {
+      lastValues = values;
+      ['d1','d2','d3','d4','dice5'].forEach((id, idx) => animateDiceToValue(id, values[idx]));
+      
+      document.getElementById("values").textContent = "Ergebnisse: " + values.join(", ");
+      document.getElementById("values").style.display = "block";
+
+      const arr4 = values.slice(0,4);
+      const arr5 = values.slice();
+      const splits4 = getSplits(arr4);
+      const set4 = new Set(splits4.map(s => s.key));
+      const splits5all = getSplits(arr5);
+
+      lastSplits5unique = splits5all.filter(s => {
+        const uses5 = s.idx.pair1.includes(4) || s.idx.pair2.includes(4);
+        return uses5 && !set4.has(s.key);
+      });
+
+      // Statistiken anzeigen
+      const totalCombinations4 = 6 ** 4;
+      const totalCombinations5 = 6 ** 5;
+      
+      document.getElementById("stats").innerHTML = `
+        <div class="stats-panel">
+          <h3>📊 Statistiken</h3>
+          <div class="stats-grid">
+            <div class="stat-item">
+              <span class="stat-value">${splits4.length}</span>
+              <div class="stat-label">Gefundene Paare (4 Würfel)</div>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">${lastSplits5unique.length}</span>
+              <div class="stat-label">Zusätzliche Paare (5. Würfel)</div>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">${totalCombinations4}</span>
+              <div class="stat-label">Mögliche 4-Würfel Kombinationen</div>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">${totalCombinations5}</span>
+              <div class="stat-label">Mögliche 5-Würfel Kombinationen</div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById("list1").innerHTML =
+        '<div class="section-title">🎯 Liste 1 (nur Würfel 1–4)</div>' + 
+        formatSplitsWithProbability(splits4, allPossibleSplits4);
+
+      updateFifthDisplay();
+    }
+
+    function rollAndCalc() {
+      const values = rollValues(5);
+      
+      // Synchronisiere Würfelwurf falls verbunden
+      if (syncClient && syncClient.currentRoomId) {
+        syncClient.syncDiceRoll(values);
+      }
+      
+      displayRoll(values);
+    }
+
+    document.getElementById("toggleFifth").addEventListener("change", updateFifthDisplay);
+
+    function updateFifthDisplay() {
+      const list2 = document.getElementById("list2");
+      const showFifth = !document.getElementById("toggleFifth").checked;
+
+      if (showFifth && lastSplits5unique.length > 0) {
+        list2.innerHTML =
+          '<div class="section-title">🎲 Liste 2 (zusätzlich durch Würfel 5)</div>' +
+          formatSplitsWithProbability(lastSplits5unique, allPossibleSplits5);
+        list2.classList.add("show");
+      } else {
+        list2.classList.remove("show");
+        list2.innerHTML = "";
+      }
     }
 
     // Event Listeners
@@ -1602,37 +1714,49 @@
     document.getElementById('leaveRoom').addEventListener('click', leaveRoom);
     document.getElementById('copyRoomId').addEventListener('click', copyRoomId);
 
-    // Überschreibe die rollAndCalc Funktion für Synchronisation
-    function rollAndCalc() {
-      if (currentRoomId) {
-        syncedRollAndCalc();
+    // Dark Mode Toggle
+    document.getElementById("toggleDark").addEventListener("click", () => {
+      document.body.classList.toggle("dark");
+
+      const btn = document.getElementById("toggleDark");
+      if (document.body.classList.contains("dark")) {
+        btn.textContent = "🌞 Darkmode deaktivieren";
       } else {
-        const values = rollValues(5);
-        displayRoll(values);
+        btn.textContent = "🌙 Darkmode aktivieren";
       }
-    }
+    });
 
     // URL Parameter prüfen für Auto-Join
     function checkURLParams() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const roomParam = urlParams.get('room');
-      if (roomParam) {
-        document.getElementById('roomIdInput').value = roomParam;
-        // Auto-open menu und join
-        document.getElementById('menuOverlay').classList.add('show');
-        setTimeout(() => {
-          joinRoom();
-        }, 500);
+      if (typeof URLHelper !== 'undefined') {
+        const roomParam = URLHelper.getRoomFromURL();
+        if (roomParam) {
+          document.getElementById('roomIdInput').value = roomParam;
+          // Auto-open menu und join
+          document.getElementById('menuOverlay').classList.add('show');
+          setTimeout(() => {
+            joinRoom();
+            URLHelper.removeRoomFromURL();
+          }, 500);
+        }
+      } else {
+        // Fallback ohne URLHelper
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomParam = urlParams.get('room');
+        if (roomParam) {
+          document.getElementById('roomIdInput').value = roomParam;
+          document.getElementById('menuOverlay').classList.add('show');
+          setTimeout(() => {
+            joinRoom();
+          }, 500);
+        }
       }
     }
 
-    // Berechne alle möglichen Kombinationen beim Laden
+    // Initialisierung
     calculateAllPossibleSplits();
-    
-    // URL Parameter prüfen
     checkURLParams();
-
-    // Erste Anzeige
+    initSyncClient();
     rollAndCalc();
   </script>
 </body>
