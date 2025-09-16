@@ -1,14 +1,26 @@
-// sync-client.js - Frontend Synchronisation für DDD Würfelpaare
+// sync-client-netlify.js - Netlify Functions Sync Client (ohne WebSocket)
 class DDDSyncClient {
-  constructor(serverUrl = 'ws://localhost:3001') {
-    this.serverUrl = serverUrl;
-    this.socket = null;
+  constructor(serverUrl = null) {
+    // Automatische Server-URL Erkennung für Netlify Functions
+    if (!serverUrl) {
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        // Lokale Entwicklung mit Netlify Dev
+        this.serverUrl = 'http://localhost:8888/.netlify/functions/sync';
+      } else {
+        // Production auf Netlify
+        this.serverUrl = `${window.location.origin}/.netlify/functions/sync`;
+      }
+    } else {
+      this.serverUrl = serverUrl;
+    }
+    
     this.isConnected = false;
     this.currentRoomId = null;
+    this.sessionId = null;
     this.participantCount = 0;
-    this.reconnectAttempts = 0;
-    this.maxReconnectAttempts = 5;
-    this.reconnectDelay = 1000;
+    this.pollInterval = null;
+    this.pollDelay = 2000; // 2 Sekunden
+    this.lastPollTimestamp = null;
     
     // Callbacks
     this.onStatusChange = null;
@@ -17,209 +29,249 @@ class DDDSyncClient {
     this.onTimerSync = null;
     this.onError = null;
     
-    this.init();
+    console.log('DDD Netlify Sync Client initialized with URL:', this.serverUrl);
+    this.testConnection();
   }
 
-  init() {
-    // Socket.io laden falls nicht vorhanden
-    if (typeof io === 'undefined') {
-      this.loadSocketIO().then(() => {
-        this.connect();
-      });
-    } else {
-      this.connect();
-    }
-  }
-
-  loadSocketIO() {
-    return new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.4/socket.io.js';
-      script.onload = resolve;
-      script.onerror = reject;
-      document.head.appendChild(script);
-    });
-  }
-
-  connect() {
-    try {
-      this.socket = io(this.serverUrl, {
-        transports: ['websocket', 'polling'],
-        timeout: 10000,
-        forceNew: true
-      });
-
-      this.setupEventListeners();
-    } catch (error) {
-      console.error('Connection failed:', error);
-      this.handleError('Connection failed');
-    }
-  }
-
-  setupEventListeners() {
-    // Verbindung hergestellt
-    this.socket.on('connect', () => {
-      console.log('Connected to sync server');
-      this.isConnected = true;
-      this.reconnectAttempts = 0;
-      this.updateStatus('online', 'Bereit für Synchronisation');
-    });
-
-    // Verbindung getrennt
-    this.socket.on('disconnect', (reason) => {
-      console.log('Disconnected:', reason);
-      this.isConnected = false;
-      this.updateStatus('offline', 'Verbindung unterbrochen');
-      
-      if (reason === 'io server disconnect') {
-        // Server hat Verbindung getrennt, nicht automatisch reconnecten
-        return;
-      }
-      
-      this.attemptReconnect();
-    });
-
-    // Verbindungsfehler
-    this.socket.on('connect_error', (error) => {
-      console.error('Connection error:', error);
-      this.updateStatus('offline', 'Verbindungsfehler');
-      this.attemptReconnect();
-    });
-
-    // Teilnehmer beigetreten
-    this.socket.on('participant-joined', (data) => {
-      this.participantCount = data.participantCount;
-      this.updateRoomInfo();
-      this.showNotification(`👋 Neuer Teilnehmer beigetreten! (${data.participantCount} Teilnehmer)`);
-    });
-
-    // Teilnehmer verlassen
-    this.socket.on('participant-left', (data) => {
-      this.participantCount = data.participantCount;
-      this.updateRoomInfo();
-      this.showNotification(`👋 Teilnehmer hat den Raum verlassen (${data.participantCount} Teilnehmer)`);
-    });
-
-    // Würfelergebnis erhalten
-    this.socket.on('dice-roll-received', (data) => {
-      console.log('Received synced dice roll:', data);
-      if (this.onDiceReceived) {
-        this.onDiceReceived(data.values);
-      }
-      this.showNotification('🎲 Synchronisierter Wurf erhalten!');
-    });
-
-    // Timer synchronisiert
-    this.socket.on('timer-sync-received', (timerState) => {
-      console.log('Received timer sync:', timerState);
-      if (this.onTimerSync) {
-        this.onTimerSync(timerState);
-      }
-    });
-
-    // Ping-Pong für Verbindungstest
-    this.socket.on('pong', (data) => {
-      const latency = Date.now() - this.pingTimestamp;
-      console.log(`Ping: ${latency}ms`);
-    });
-  }
-
-  attemptReconnect() {
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      this.updateStatus('offline', 'Reconnect fehlgeschlagen');
-      return;
-    }
-
-    this.reconnectAttempts++;
-    this.updateStatus('connecting', `Reconnect... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+  async testConnection() {
+    this.updateStatus('connecting', 'Teste Serververbindung...');
     
-    setTimeout(() => {
-      this.connect();
-    }, this.reconnectDelay * this.reconnectAttempts);
+    try {
+      const response = await fetch(this.serverUrl + '/health');
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Server health check successful:', data);
+        this.isConnected = true;
+        this.updateStatus('online', 'Bereit für Synchronisation');
+      } else {
+        throw new Error(`Server responded with ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Server connection test failed:', error);
+      this.isConnected = false;
+      this.updateStatus('offline', 'Server nicht erreichbar');
+      this.handleError('Server nicht verfügbar: ' + error.message);
+    }
+  }
+
+  async makeRequest(endpoint, data = null, method = 'GET') {
+    try {
+      const options = {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      };
+
+      if (data && method !== 'GET') {
+        options.body = JSON.stringify(data);
+      }
+
+      const response = await fetch(this.serverUrl + endpoint, options);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error(`Request to ${endpoint} failed:`, error);
+      throw error;
+    }
+  }
+
+  startPolling() {
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval);
+    }
+
+    this.pollInterval = setInterval(async () => {
+      if (!this.currentRoomId || !this.sessionId) return;
+
+      try {
+        const response = await this.makeRequest('/poll', {
+          roomId: this.currentRoomId,
+          sessionId: this.sessionId,
+          since: this.lastPollTimestamp
+        }, 'POST');
+
+        if (response.success) {
+          // Aktualisiere Teilnehmerzahl
+          if (response.participantCount !== this.participantCount) {
+            this.participantCount = response.participantCount;
+            this.updateRoomInfo();
+          }
+
+          // Verarbeite neue Nachrichten
+          response.messages.forEach(message => {
+            this.handleMessage(message);
+          });
+
+          this.lastPollTimestamp = response.timestamp;
+        }
+      } catch (error) {
+        console.error('Polling error:', error);
+        // Bei Fehlern weniger häufig pollen
+        this.pollDelay = Math.min(this.pollDelay * 1.5, 10000); // Max 10 Sekunden
+      }
+    }, this.pollDelay);
+  }
+
+  stopPolling() {
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval);
+      this.pollInterval = null;
+    }
+  }
+
+  handleMessage(message) {
+    console.log('Received message:', message);
+
+    switch (message.type) {
+      case 'dice-roll':
+        if (this.onDiceReceived) {
+          this.onDiceReceived(message.values);
+        }
+        this.showNotification('🎲 Synchronisierter Wurf erhalten!');
+        break;
+
+      case 'timer-sync':
+        if (this.onTimerSync) {
+          this.onTimerSync(message.timerState);
+        }
+        break;
+
+      default:
+        console.log('Unknown message type:', message.type);
+    }
   }
 
   // Öffentliche API
-  createRoom() {
-    return new Promise((resolve, reject) => {
-      if (!this.isConnected) {
-        reject(new Error('Not connected to server'));
-        return;
-      }
+  async createRoom() {
+    if (!this.isConnected) {
+      throw new Error('Nicht mit Server verbunden');
+    }
 
-      this.socket.emit('create-room', (response) => {
-        if (response.success) {
-          this.currentRoomId = response.roomId;
-          this.participantCount = response.participantCount;
-          this.updateStatus('online', `Raum ${response.roomId} erstellt`);
-          resolve(response);
-        } else {
-          reject(new Error(response.error));
-        }
-      });
-    });
+    try {
+      const response = await this.makeRequest('/create-room', {}, 'POST');
+      
+      if (response.success) {
+        this.currentRoomId = response.roomId;
+        this.sessionId = response.sessionId;
+        this.participantCount = response.participantCount;
+        this.updateStatus('online', `Raum ${response.roomId} erstellt`);
+        this.startPolling();
+        return response;
+      } else {
+        throw new Error(response.error);
+      }
+    } catch (error) {
+      this.handleError('Raum erstellen fehlgeschlagen: ' + error.message);
+      throw error;
+    }
   }
 
-  joinRoom(roomId) {
-    return new Promise((resolve, reject) => {
-      if (!this.isConnected) {
-        reject(new Error('Not connected to server'));
-        return;
-      }
+  async joinRoom(roomId) {
+    if (!this.isConnected) {
+      throw new Error('Nicht mit Server verbunden');
+    }
 
-      this.socket.emit('join-room', roomId.toUpperCase(), (response) => {
-        if (response.success) {
-          this.currentRoomId = response.roomId;
-          this.participantCount = response.participantCount;
-          this.updateStatus('online', `Raum ${response.roomId} beigetreten`);
-          
-          // Synchronisiere aktuellen Zustand
-          if (response.currentDiceValues && this.onDiceReceived) {
+    try {
+      const response = await this.makeRequest('/join-room', {
+        roomId: roomId.toUpperCase()
+      }, 'POST');
+      
+      if (response.success) {
+        this.currentRoomId = response.roomId;
+        this.sessionId = response.sessionId;
+        this.participantCount = response.participantCount;
+        this.updateStatus('online', `Raum ${response.roomId} beigetreten`);
+        
+        // Synchronisiere aktuellen Zustand
+        if (response.currentDiceValues && this.onDiceReceived) {
+          setTimeout(() => {
             this.onDiceReceived(response.currentDiceValues);
-          }
-          if (response.timerState && this.onTimerSync) {
-            this.onTimerSync(response.timerState);
-          }
-          
-          resolve(response);
-        } else {
-          reject(new Error(response.error));
+          }, 100);
         }
-      });
-    });
-  }
-
-  leaveRoom() {
-    if (this.isConnected && this.currentRoomId) {
-      this.socket.emit('leave-room');
-      this.currentRoomId = null;
-      this.participantCount = 0;
-      this.updateStatus('online', 'Bereit für Synchronisation');
+        if (response.timerState && this.onTimerSync) {
+          setTimeout(() => {
+            this.onTimerSync(response.timerState);
+          }, 100);
+        }
+        
+        this.startPolling();
+        return response;
+      } else {
+        throw new Error(response.error);
+      }
+    } catch (error) {
+      this.handleError('Raum beitreten fehlgeschlagen: ' + error.message);
+      throw error;
     }
   }
 
-  syncDiceRoll(values) {
-    if (this.isConnected && this.currentRoomId) {
-      this.socket.emit('sync-dice-roll', values);
+  async leaveRoom() {
+    if (this.currentRoomId && this.sessionId) {
+      try {
+        await this.makeRequest('/leave-room', {
+          roomId: this.currentRoomId,
+          sessionId: this.sessionId
+        }, 'POST');
+      } catch (error) {
+        console.error('Leave room error:', error);
+      }
+    }
+
+    this.stopPolling();
+    this.currentRoomId = null;
+    this.sessionId = null;
+    this.participantCount = 0;
+    this.lastPollTimestamp = null;
+    this.updateStatus('online', 'Bereit für Synchronisation');
+  }
+
+  async syncDiceRoll(values) {
+    if (!this.isConnected || !this.currentRoomId || !this.sessionId) {
+      return;
+    }
+
+    try {
+      console.log('Syncing dice roll:', values);
+      await this.makeRequest('/sync-dice', {
+        roomId: this.currentRoomId,
+        sessionId: this.sessionId,
+        diceValues: values
+      }, 'POST');
+    } catch (error) {
+      console.error('Sync dice roll failed:', error);
     }
   }
 
-  syncTimer(timerState) {
-    if (this.isConnected && this.currentRoomId) {
-      this.socket.emit('sync-timer', timerState);
+  async syncTimer(timerState) {
+    if (!this.isConnected || !this.currentRoomId || !this.sessionId) {
+      return;
+    }
+
+    try {
+      console.log('Syncing timer state:', timerState);
+      await this.makeRequest('/sync-timer', {
+        roomId: this.currentRoomId,
+        sessionId: this.sessionId,
+        timerState
+      }, 'POST');
+    } catch (error) {
+      console.error('Sync timer failed:', error);
     }
   }
 
   ping() {
-    if (this.isConnected) {
-      this.pingTimestamp = Date.now();
-      this.socket.emit('ping', (response) => {
-        console.log('Ping response:', response);
-      });
-    }
+    // Für HTTP-basierte API weniger relevant, aber wir können einen Health Check machen
+    return this.testConnection();
   }
 
   // Hilfsmethoden
   updateStatus(status, text) {
+    console.log(`Status: ${status} - ${text}`);
     if (this.onStatusChange) {
       this.onStatusChange(status, text);
     }
@@ -235,6 +287,8 @@ class DDDSyncClient {
   }
 
   showNotification(message) {
+    console.log('Notification:', message);
+    
     // Erstelle Benachrichtigung
     const notification = document.createElement('div');
     notification.className = 'sync-notification';
@@ -309,26 +363,37 @@ class DDDSyncClient {
 
   // Cleanup
   disconnect() {
-    if (this.socket) {
-      this.socket.disconnect();
-      this.socket = null;
-    }
+    this.stopPolling();
     this.isConnected = false;
     this.currentRoomId = null;
+    this.sessionId = null;
     this.participantCount = 0;
+  }
+
+  // Debug-Informationen
+  getDebugInfo() {
+    return {
+      serverUrl: this.serverUrl,
+      isConnected: this.isConnected,
+      currentRoomId: this.currentRoomId,
+      sessionId: this.sessionId,
+      participantCount: this.participantCount,
+      pollDelay: this.pollDelay,
+      isPolling: !!this.pollInterval
+    };
   }
 }
 
-// QR Code Utilities
+// QR Code Utilities (unverändert)
 class QRCodeGenerator {
   static generate(text, container, size = 200) {
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(text)}&bgcolor=ffffff&color=000000&qzone=2`;
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(text)}&bgcolor=ffffff&color=000000&qzone=2&format=png`;
     
     container.innerHTML = `
       <img src="${qrUrl}" 
            alt="QR Code" 
            style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"
-           onerror="this.parentNode.innerHTML='<div style=\\'text-align: center; padding: 20px; color: #666;\\'>QR-Code konnte nicht geladen werden</div>'">
+           onerror="this.parentNode.innerHTML='<div style=\\'text-align: center; padding: 20px; color: #666; border: 2px dashed #ddd; border-radius: 8px;\\'>QR-Code konnte nicht geladen werden<br><small>URL: ${text}</small></div>'">
     `;
   }
 
@@ -337,7 +402,7 @@ class QRCodeGenerator {
   }
 }
 
-// URL Parameter Helper
+// URL Parameter Helper (unverändert)
 class URLHelper {
   static getParameter(name) {
     const urlParams = new URLSearchParams(window.location.search);
@@ -355,25 +420,30 @@ class URLHelper {
   }
 }
 
-// Clipboard Helper
+// Clipboard Helper (unverändert)
 class ClipboardHelper {
   static async copy(text) {
     try {
       await navigator.clipboard.writeText(text);
+      console.log('Copied to clipboard:', text);
       return true;
     } catch (err) {
+      console.warn('Clipboard API failed, trying fallback:', err);
       // Fallback für ältere Browser
       const textArea = document.createElement('textarea');
       textArea.value = text;
       textArea.style.position = 'fixed';
       textArea.style.opacity = '0';
+      textArea.style.top = '-9999px';
       document.body.appendChild(textArea);
       textArea.select();
       
       try {
-        document.execCommand('copy');
-        return true;
+        const result = document.execCommand('copy');
+        console.log('Fallback copy result:', result);
+        return result;
       } catch (fallbackErr) {
+        console.error('Both clipboard methods failed:', fallbackErr);
         return false;
       } finally {
         document.body.removeChild(textArea);
@@ -386,3 +456,11 @@ class ClipboardHelper {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { DDDSyncClient, QRCodeGenerator, URLHelper, ClipboardHelper };
 }
+
+// Global verfügbar machen für Browser
+if (typeof window !== 'undefined') {
+  window.DDDSyncClient = DDDSyncClient;
+  window.QRCodeGenerator = QRCodeGenerator;
+  window.URLHelper = URLHelper;
+  window.ClipboardHelper = ClipboardHelper;
+                    }
