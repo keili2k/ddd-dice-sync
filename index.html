@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <title>Drehbare Würfel + Paarsummen mit Wahrscheinlichkeiten</title>
+  <title>Companion für Dungeons, Dice & Danger</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -1045,6 +1045,148 @@
       background: #5a4a00 !important;
     }
 
+    /* Würfel-Modi */
+    .dice-mode-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .dice-mode-controls .toggle-label {
+      padding: 12px;
+      background: white;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+
+    body.dark .dice-mode-controls .toggle-label {
+      background: #2d3748;
+      border-color: #4a5568;
+    }
+
+    .dice-mode-controls input[type="radio"]:checked + span {
+      color: #6f42c1;
+      font-weight: bold;
+    }
+
+    .dice-mode-controls .toggle-label:has(input:checked) {
+      border-color: #6f42c1;
+      background: rgba(111, 66, 193, 0.1);
+    }
+
+    body.dark .dice-mode-controls .toggle-label:has(input:checked) {
+      border-color: #9f7aea;
+      background: rgba(159, 122, 234, 0.2);
+    }
+
+    /* Manuelle Würfel-Einstellung */
+    .manual-dice-section {
+      border-left-color: #17a2b8 !important;
+    }
+
+    .manual-dice-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .manual-die-control {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px;
+      background: white;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+    }
+
+    body.dark .manual-die-control {
+      background: #2d3748;
+      border-color: #4a5568;
+    }
+
+    .manual-die-control label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #495057;
+      margin: 0;
+    }
+
+    body.dark .manual-die-control label {
+      color: #e2e8f0;
+    }
+
+    .manual-die-control select {
+      padding: 4px 8px;
+      border: 1px solid #17a2b8;
+      border-radius: 4px;
+      background: white;
+      color: #17a2b8;
+      font-weight: bold;
+      cursor: pointer;
+      min-width: 50px;
+    }
+
+    body.dark .manual-die-control select {
+      background: #4a5568;
+      border-color: #38b2ac;
+      color: #38b2ac;
+    }
+
+    /* Würfel-Interaktion Modi */
+    .dice-row.auto-mode {
+      cursor: pointer;
+    }
+
+    .dice-row.auto-mode:hover {
+      transform: scale(1.02);
+      transition: transform 0.2s ease;
+    }
+
+    .dice-row.manual-mode {
+      cursor: default;
+    }
+
+    .dice-row.manual-mode .scene {
+      position: relative;
+    }
+
+    .dice-row.manual-mode .scene::after {
+      content: "🎯";
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: #17a2b8;
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      z-index: 10;
+    }
+
+    /* Hinweis-Text für Modi */
+    .dice-mode-info {
+      font-size: 14px;
+      color: #6c757d;
+      text-align: center;
+      margin-top: 10px;
+      font-style: italic;
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 6px;
+      border-left: 3px solid #17a2b8;
+    }
+
+    body.dark .dice-mode-info {
+      color: #a0aec0;
+      background: #2d3748;
+    }
+
     /* Spieler-Management */
     .player-controls {
       display: flex;
@@ -1715,6 +1857,39 @@
         </div>
       </div>
 
+      <!-- Würfel-Modus -->
+      <div class="menu-section">
+        <h4>🎲 Würfel-Modus</h4>
+        <div class="dice-mode-controls">
+          <label class="toggle-label">
+            <input type="radio" name="diceMode" id="diceMode-auto" value="auto" checked />
+            <span>Automatisch würfeln (Klick)</span>
+          </label>
+          <label class="toggle-label">
+            <input type="radio" name="diceMode" id="diceMode-manual" value="manual" />
+            <span>Manuell einstellen (Tisch-Würfel)</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Manuelle Würfel-Einstellung (nur wenn manueller Modus) -->
+      <div class="menu-section manual-dice-section" id="manualDiceSection" style="display: none;">
+        <h4>🎯 Würfel-Werte einstellen</h4>
+        <div class="manual-dice-controls">
+          ${[1, 2, 3, 4, 5].map(diceIndex => `
+            <div class="manual-die-control">
+              <label>Würfel ${diceIndex}${diceIndex === 5 ? ' (schwarz)' : ''}:</label>
+              <select id="manualDie-${diceIndex}" onchange="setDiceValue(${diceIndex}, this.value)">
+                ${[1, 2, 3, 4, 5, 6].map(value => `
+                  <option value="${value}">${value}</option>
+                `).join('')}
+              </select>
+            </div>
+          `).join('')}
+          <button id="applyManualDice" class="menu-action-button primary">✓ Werte übernehmen</button>
+        </div>
+      </div>
+
       <!-- Timer-Steuerung (nur wenn Timer aktiviert) -->
       <div class="menu-section timer-section" id="timerSection">
         <h4>⏱️ Timer-Steuerung</h4>
@@ -1797,12 +1972,16 @@
     <!-- Spieler werden dynamisch hinzugefügt -->
   </div>
   
-  <div class="dice-row" onclick="rollAndCalc()">
+  <div class="dice-row auto-mode" id="diceRow" onclick="handleDiceClick()">
     <div class="scene"><div class="dice" id="d1"></div></div>
     <div class="scene"><div class="dice" id="d2"></div></div>
     <div class="scene"><div class="dice" id="d3"></div></div>
     <div class="scene"><div class="dice" id="d4"></div></div>
     <div class="scene"><div class="dice is-fifth" id="dice5"></div></div>
+  </div>
+
+  <div class="dice-mode-info" id="diceModeInfo">
+    Klicken Sie auf die Würfel oder den Würfeln-Button zum automatischen Würfeln
   </div>
   
   <div id="values" style="display:none;"></div>
@@ -2770,6 +2949,11 @@
     document.getElementById("toggleTimer").addEventListener("change", updateTimerDisplay);
     document.getElementById("togglePlayers").addEventListener("change", updatePlayersDisplay);
 
+    // Würfel-Modus Event Listeners
+    document.getElementById("diceMode-auto").addEventListener("change", updateDiceMode);
+    document.getElementById("diceMode-manual").addEventListener("change", updateDiceMode);
+    document.getElementById("applyManualDice").addEventListener("click", applyManualDice);
+
     // Spieler-Management Event Listeners
     document.getElementById("addPlayer").addEventListener("click", addPlayer);
     document.getElementById("resetAllPlayers").addEventListener("click", resetAllPlayers);
@@ -2785,6 +2969,65 @@
       } else {
         statsElement.innerHTML = '';
       }
+    }
+
+    // Würfel-Modi
+    let currentDiceMode = 'auto';
+    let manualDiceValues = [1, 1, 1, 1, 1];
+
+    function handleDiceClick() {
+      if (currentDiceMode === 'auto') {
+        rollAndCalc();
+      }
+      // Im manuellen Modus passiert nichts beim Klick
+    }
+
+    function updateDiceMode() {
+      const autoMode = document.getElementById('diceMode-auto').checked;
+      const manualSection = document.getElementById('manualDiceSection');
+      const diceRow = document.getElementById('diceRow');
+      const modeInfo = document.getElementById('diceModeInfo');
+      
+      currentDiceMode = autoMode ? 'auto' : 'manual';
+      
+      if (autoMode) {
+        manualSection.style.display = 'none';
+        diceRow.className = 'dice-row auto-mode';
+        modeInfo.textContent = 'Klicken Sie auf die Würfel oder den Würfeln-Button zum automatischen Würfeln';
+      } else {
+        manualSection.style.display = 'block';
+        diceRow.className = 'dice-row manual-mode';
+        modeInfo.textContent = 'Stellen Sie die Würfelwerte manuell ein und übernehmen Sie sie';
+        
+        // Setze manuelle Werte auf aktuelle Würfelwerte falls vorhanden
+        if (lastValues.length > 0) {
+          lastValues.forEach((value, index) => {
+            document.getElementById(`manualDie-${index + 1}`).value = value;
+            manualDiceValues[index] = value;
+          });
+        }
+      }
+    }
+
+    function setDiceValue(diceIndex, value) {
+      const numValue = parseInt(value);
+      manualDiceValues[diceIndex - 1] = numValue;
+      
+      // Direkt den Würfel zur entsprechenden Zahl drehen
+      animateDiceToValue(`d${diceIndex === 5 ? 'ice5' : diceIndex}`, numValue);
+    }
+
+    function applyManualDice() {
+      // Manuelle Werte als Würfelergebnis setzen
+      displayRoll([...manualDiceValues]);
+      
+      // Synchronisiere falls verbunden
+      if (syncClient && syncClient.currentRoomId) {
+        syncClient.syncDiceRoll([...manualDiceValues]);
+      }
+      
+      // Menü schließen
+      document.getElementById('menuOverlay').classList.remove('show');
     }
 
     function updateFifthDisplay() {
