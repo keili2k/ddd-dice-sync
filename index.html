@@ -1043,6 +1043,295 @@
 
     body.dark .debug-section {
       background: #5a4a00 !important;
+    }
+
+    /* Spieler-Management */
+    .player-controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+
+    /* Spieler Dashboards */
+    .players-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+      margin: 20px 0;
+      padding: 0 20px;
+    }
+
+    .player-dashboard {
+      background: white;
+      border-radius: 15px;
+      padding: 20px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+      border-left: 4px solid #007bff;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .player-dashboard:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    body.dark .player-dashboard {
+      background: #2d3748;
+      border-left-color: #4299e1;
+    }
+
+    .player-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 10px;
+    }
+
+    body.dark .player-header {
+      border-bottom-color: #4a5568;
+    }
+
+    .player-name {
+      font-size: 1.2em;
+      font-weight: bold;
+      color: #2d3748;
+      background: transparent;
+      border: none;
+      outline: none;
+      min-width: 100px;
+      padding: 5px;
+      border-radius: 4px;
+      transition: background 0.3s ease;
+    }
+
+    .player-name:focus {
+      background: #f7fafc;
+    }
+
+    body.dark .player-name {
+      color: #e2e8f0;
+    }
+
+    body.dark .player-name:focus {
+      background: #4a5568;
+    }
+
+    .remove-player {
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      cursor: pointer;
+      font-size: 18px;
+      transition: all 0.3s ease;
+    }
+
+    .remove-player:hover {
+      background: #c82333;
+      transform: rotate(90deg);
+    }
+
+    /* Lebensbalken */
+    .health-section {
+      margin-bottom: 20px;
+    }
+
+    .section-title-small {
+      font-size: 0.9em;
+      font-weight: bold;
+      color: #495057;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    body.dark .section-title-small {
+      color: #a0aec0;
+    }
+
+    .health-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      align-items: center;
+    }
+
+    .health-option {
+      position: relative;
+    }
+
+    .health-radio {
+      display: none;
+    }
+
+    .health-label {
+      display: block;
+      padding: 6px 12px;
+      background: #f8f9fa;
+      border: 2px solid #dee2e6;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.85em;
+      transition: all 0.3s ease;
+      user-select: none;
+    }
+
+    .health-label:hover {
+      background: #e9ecef;
+      border-color: #adb5bd;
+    }
+
+    .health-radio:checked + .health-label {
+      background: #dc3545;
+      border-color: #dc3545;
+      color: white;
+    }
+
+    .health-label.dead {
+      background: #000;
+      color: white;
+      border-color: #000;
+    }
+
+    body.dark .health-label {
+      background: #4a5568;
+      border-color: #718096;
+      color: #e2e8f0;
+    }
+
+    body.dark .health-label:hover {
+      background: #2d3748;
+      border-color: #4a5568;
+    }
+
+    /* Schwarze Würfel */
+    .black-dice-section {
+      margin-bottom: 20px;
+    }
+
+    .black-dice-grid {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .black-die-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .black-die-checkbox {
+      width: 18px;
+      height: 18px;
+      accent-color: #000;
+      cursor: pointer;
+    }
+
+    .black-die-icon {
+      width: 30px;
+      height: 30px;
+      background: #000;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 18px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Schatztruhe */
+    .treasure-section {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+    }
+
+    .treasure-category {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+      border: 2px solid transparent;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .treasure-category:hover {
+      border-color: #007bff;
+      transform: translateY(-2px);
+    }
+
+    .treasure-category.disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    body.dark .treasure-category {
+      background: #4a5568;
+    }
+
+    .treasure-category-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 10px;
+    }
+
+    .treasure-category-checkbox {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    .treasure-icon {
+      font-size: 1.5em;
+      display: block;
+    }
+
+    .treasure-label {
+      font-size: 0.8em;
+      font-weight: 600;
+      color: #495057;
+    }
+
+    body.dark .treasure-label {
+      color: #e2e8f0;
+    }
+
+    .treasure-checkboxes {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .treasure-checkbox {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    .treasure-checkbox.heart {
+      accent-color: #dc3545;
+    }
+
+    .treasure-checkbox.torch {
+      accent-color: #ffc107;
+    }
+
+    .treasure-checkbox.dice {
+      accent-color: #000;
     } #4a5568;
       border-left-color: #9f7aea;
     }
@@ -1442,6 +1731,19 @@
         </div>
       </div>
 
+      <!-- Spieler-Management -->
+      <div class="menu-section">
+        <h4>👥 Spieler-Management</h4>
+        <div class="player-controls">
+          <button id="addPlayer" class="menu-action-button success">➕ Spieler hinzufügen</button>
+          <button id="resetAllPlayers" class="menu-action-button danger small">🔄 Alle zurücksetzen</button>
+        </div>
+        <label class="toggle-label">
+          <input type="checkbox" id="togglePlayers" checked />
+          <span>Spieler-Dashboards anzeigen</span>
+        </label>
+      </div>
+
       <!-- Synchronisation -->
       <div class="menu-section">
         <h4>🔗 Geräte-Synchronisation</h4>
@@ -1488,6 +1790,11 @@
   <div class="countdown-container" id="countdownContainer">
     <div class="countdown-display" id="countdownDisplay">--:--</div>
     <div class="timer-status" id="timerStatus">Timer bereit</div>
+  </div>
+
+  <!-- Spieler Dashboards -->
+  <div class="players-container" id="playersContainer">
+    <!-- Spieler werden dynamisch hinzugefügt -->
   </div>
   
   <div class="dice-row" onclick="rollAndCalc()">
@@ -2092,17 +2399,340 @@
       updateTimerDisplay();
     }
 
-    // Toggle-Funktionen für die neuen Optionen
-    function updateStatsDisplay() {
-      const showStats = document.getElementById('toggleStats').checked;
-      const statsElement = document.getElementById('stats');
+    // Spieler-Management
+    let players = [];
+    let nextPlayerId = 1;
+
+    function createPlayerDashboard(playerId, playerName = '') {
+      const player = {
+        id: playerId,
+        name: playerName || `Spieler ${playerId}`,
+        health: 20, // Startwert
+        blackDice: [false, false, false], // 3 schwarze Würfel
+        treasure: {
+          heart: [false, false, false], // 3 Herzen
+          torch: [false, false], // 2 Fackeln
+          dice: [false, false, false] // 3 Würfel
+        },
+        treasureCategories: {
+          heart: false,
+          torch: false,
+          dice: false
+        }
+      };
       
-      if (showStats && lastValues.length > 0) {
-        // Neu berechnen und anzeigen
-        displayRoll(lastValues);
-      } else {
-        statsElement.innerHTML = '';
+      const dashboard = document.createElement('div');
+      dashboard.className = 'player-dashboard';
+      dashboard.id = `player-${playerId}`;
+      
+      dashboard.innerHTML = `
+        <div class="player-header">
+          <input type="text" class="player-name" value="${player.name}" 
+                 onchange="updatePlayerName(${playerId}, this.value)" 
+                 placeholder="Spieler Name">
+          <button class="remove-player" onclick="removePlayer(${playerId})" title="Spieler entfernen">×</button>
+        </div>
+        
+        <div class="health-section">
+          <div class="section-title-small">❤️ Lebenspunkte</div>
+          <div class="health-bar">
+            ${[0, 0, 1, 2, 4, 6, 9, 12, 16, 20].map(value => `
+              <div class="health-option">
+                <input type="radio" id="health-${playerId}-${value}" name="health-${playerId}" 
+                       value="${value}" class="health-radio" ${value === 20 ? 'checked' : ''}
+                       onchange="updatePlayerHealth(${playerId}, ${value})">
+                <label for="health-${playerId}-${value}" class="health-label">${value}</label>
+              </div>
+            `).join('')}
+            <div class="health-option">
+              <input type="radio" id="health-${playerId}-dead" name="health-${playerId}" 
+                     value="dead" class="health-radio" onchange="updatePlayerHealth(${playerId}, 'dead')">
+              <label for="health-${playerId}-dead" class="health-label dead">💀 TOT</label>
+            </div>
+          </div>
+        </div>
+        
+        <div class="black-dice-section">
+          <div class="section-title-small">🎲 Schwarze Würfel</div>
+          <div class="black-dice-grid">
+            ${[0, 1, 2].map(index => `
+              <div class="black-die-item">
+                <input type="checkbox" class="black-die-checkbox" id="blackdie-${playerId}-${index}"
+                       onchange="updateBlackDie(${playerId}, ${index}, this.checked)">
+                <div class="black-die-icon">🎯</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+        
+        <div class="treasure-section">
+          <div class="treasure-category" id="treasure-heart-${playerId}">
+            <div class="treasure-category-header">
+              <input type="checkbox" class="treasure-category-checkbox" id="category-heart-${playerId}"
+                     onchange="updateTreasureCategory(${playerId}, 'heart', this.checked)">
+              <span class="treasure-icon">❤️ ➕ 💎</span>
+              <div class="treasure-label">Herz/Diamant</div>
+            </div>
+            <div class="treasure-checkboxes">
+              ${[0, 1, 2].map(index => `
+                <input type="checkbox" class="treasure-checkbox heart" 
+                       id="heart-${playerId}-${index}" disabled
+                       onchange="updateTreasure(${playerId}, 'heart', ${index}, this.checked)">
+              `).join('')}
+            </div>
+          </div>
+          
+          <div class="treasure-category" id="treasure-torch-${playerId}">
+            <div class="treasure-category-header">
+              <input type="checkbox" class="treasure-category-checkbox" id="category-torch-${playerId}"
+                     onchange="updateTreasureCategory(${playerId}, 'torch', this.checked)">
+              <span class="treasure-icon">🔦</span>
+              <div class="treasure-label">Fackel</div>
+            </div>
+            <div class="treasure-checkboxes">
+              ${[0, 1].map(index => `
+                <input type="checkbox" class="treasure-checkbox torch" 
+                       id="torch-${playerId}-${index}" disabled
+                       onchange="updateTreasure(${playerId}, 'torch', ${index}, this.checked)">
+              `).join('')}
+            </div>
+          </div>
+          
+          <div class="treasure-category" id="treasure-dice-${playerId}">
+            <div class="treasure-category-header">
+              <input type="checkbox" class="treasure-category-checkbox" id="category-dice-${playerId}"
+                     onchange="updateTreasureCategory(${playerId}, 'dice', this.checked)">
+              <span class="treasure-icon">🎲</span>
+              <div class="treasure-label">Würfel</div>
+            </div>
+            <div class="treasure-checkboxes">
+              ${[0, 1, 2].map(index => `
+                <input type="checkbox" class="treasure-checkbox dice" 
+                       id="dice-${playerId}-${index}" disabled
+                       onchange="updateTreasure(${playerId}, 'dice', ${index}, this.checked)">
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+      
+      players.push(player);
+      return dashboard;
+    }
+
+    function addPlayer() {
+      const playersContainer = document.getElementById('playersContainer');
+      const dashboard = createPlayerDashboard(nextPlayerId);
+      playersContainer.appendChild(dashboard);
+      nextPlayerId++;
+      
+      // Synchronisiere neue Spieler falls verbunden
+      if (syncClient && syncClient.currentRoomId) {
+        syncPlayerData();
       }
+    }
+
+    function removePlayer(playerId) {
+      const dashboard = document.getElementById(`player-${playerId}`);
+      if (dashboard) {
+        dashboard.remove();
+      }
+      
+      players = players.filter(p => p.id !== playerId);
+      
+      // Synchronisiere entfernte Spieler falls verbunden
+      if (syncClient && syncClient.currentRoomId) {
+        syncPlayerData();
+      }
+    }
+
+    function updatePlayerName(playerId, newName) {
+      const player = players.find(p => p.id === playerId);
+      if (player) {
+        player.name = newName;
+        if (syncClient && syncClient.currentRoomId) {
+          syncPlayerData();
+        }
+      }
+    }
+
+    function updatePlayerHealth(playerId, health) {
+      const player = players.find(p => p.id === playerId);
+      if (player) {
+        player.health = health;
+        if (syncClient && syncClient.currentRoomId) {
+          syncPlayerData();
+        }
+      }
+    }
+
+    function updateBlackDie(playerId, index, checked) {
+      const player = players.find(p => p.id === playerId);
+      if (player) {
+        player.blackDice[index] = checked;
+        if (syncClient && syncClient.currentRoomId) {
+          syncPlayerData();
+        }
+      }
+    }
+
+    function updateTreasureCategory(playerId, type, checked) {
+      const player = players.find(p => p.id === playerId);
+      if (!player) return;
+
+      if (checked) {
+        // Prüfen ob bereits 2 Kategorien gewählt sind
+        const selectedCount = Object.values(player.treasureCategories).filter(Boolean).length;
+        if (selectedCount >= 2) {
+          // Checkbox zurücksetzen
+          document.getElementById(`category-${type}-${playerId}`).checked = false;
+          alert('Maximal 2 von 3 Schatztruhen-Kategorien können gewählt werden!');
+          return;
+        }
+      }
+
+      player.treasureCategories[type] = checked;
+      
+      // Aktiviere/deaktiviere die individuellen Checkboxen
+      const maxItems = type === 'torch' ? 1 : 2;
+      for (let i = 0; i <= maxItems; i++) {
+        const checkbox = document.getElementById(`${type}-${playerId}-${i}`);
+        if (checkbox) {
+          checkbox.disabled = !checked;
+          if (!checked) {
+            checkbox.checked = false;
+            player.treasure[type][i] = false;
+          }
+        }
+      }
+
+      // Visuelles Feedback für Kategorie
+      const categoryDiv = document.getElementById(`treasure-${type}-${playerId}`);
+      if (checked) {
+        categoryDiv.classList.remove('disabled');
+      } else {
+        categoryDiv.classList.add('disabled');
+      }
+
+      // Andere Kategorien prüfen und ggf. sperren
+      updateTreasureCategoryStates(playerId);
+
+      if (syncClient && syncClient.currentRoomId) {
+        syncPlayerData();
+      }
+    }
+
+    function updateTreasureCategoryStates(playerId) {
+      const player = players.find(p => p.id === playerId);
+      if (!player) return;
+
+      const selectedCount = Object.values(player.treasureCategories).filter(Boolean).length;
+      
+      ['heart', 'torch', 'dice'].forEach(type => {
+        const categoryCheckbox = document.getElementById(`category-${type}-${playerId}`);
+        const categoryDiv = document.getElementById(`treasure-${type}-${playerId}`);
+        
+        if (!player.treasureCategories[type] && selectedCount >= 2) {
+          // Kategorie sperren
+          categoryCheckbox.disabled = true;
+          categoryDiv.classList.add('disabled');
+        } else if (!player.treasureCategories[type]) {
+          // Kategorie entsperren
+          categoryCheckbox.disabled = false;
+          categoryDiv.classList.remove('disabled');
+        }
+      });
+    }
+
+    function updateTreasure(playerId, type, index, checked) {
+      const player = players.find(p => p.id === playerId);
+      if (player && player.treasureCategories[type]) {
+        player.treasure[type][index] = checked;
+        if (syncClient && syncClient.currentRoomId) {
+          syncPlayerData();
+        }
+      }
+    }
+
+    function resetAllPlayers() {
+      if (confirm('Alle Spielerdaten zurücksetzen?')) {
+        players.forEach(player => {
+          player.health = 20;
+          player.blackDice = [false, false, false];
+          player.treasure = {
+            heart: [false, false, false],
+            torch: [false, false],
+            dice: [false, false, false]
+          };
+          player.treasureCategories = {
+            heart: false,
+            torch: false,
+            dice: false
+          };
+        });
+        
+        // UI aktualisieren
+        players.forEach(player => {
+          // Health zurücksetzen
+          document.getElementById(`health-${player.id}-20`).checked = true;
+          document.querySelectorAll(`input[name="health-${player.id}"]:not(#health-${player.id}-20)`).forEach(input => {
+            input.checked = false;
+          });
+          
+          // Schwarze Würfel zurücksetzen
+          [0, 1, 2].forEach(index => {
+            document.getElementById(`blackdie-${player.id}-${index}`).checked = false;
+          });
+          
+          // Schatztruhen-Kategorien zurücksetzen
+          ['heart', 'torch', 'dice'].forEach(type => {
+            const categoryCheckbox = document.getElementById(`category-${type}-${player.id}`);
+            const categoryDiv = document.getElementById(`treasure-${type}-${player.id}`);
+            
+            categoryCheckbox.checked = false;
+            categoryCheckbox.disabled = false;
+            categoryDiv.classList.remove('disabled');
+            categoryDiv.classList.add('disabled');
+            
+            // Individuelle Checkboxen zurücksetzen und deaktivieren
+            const maxIndex = type === 'torch' ? 1 : 2;
+            for (let i = 0; i <= maxIndex; i++) {
+              const checkbox = document.getElementById(`${type}-${player.id}-${i}`);
+              checkbox.checked = false;
+              checkbox.disabled = true;
+            }
+          });
+        });
+        
+        if (syncClient && syncClient.currentRoomId) {
+          syncPlayerData();
+        }
+      }
+    }
+
+    function updatePlayersDisplay() {
+      const showPlayers = document.getElementById('togglePlayers').checked;
+      const playersContainer = document.getElementById('playersContainer');
+      
+      if (showPlayers) {
+        playersContainer.classList.remove('hidden');
+      } else {
+        playersContainer.classList.add('hidden');
+      }
+    }
+
+    function syncPlayerData() {
+      if (syncClient && syncClient.currentRoomId) {
+        syncClient.syncPlayers(players);
+      }
+    }
+
+    function receivePlayerData(playersData) {
+      // Empfangene Spielerdaten anzeigen
+      console.log('Received player data:', playersData);
+      
+      // TODO: Spielerdaten synchronisieren ohne lokale Änderungen zu überschreiben
+      // Dies würde eine komplexere Merge-Logik erfordern
     }
 
     function updateTimerDisplay() {
@@ -2138,6 +2768,24 @@
     document.getElementById("toggleFifth").addEventListener("change", updateFifthDisplay);
     document.getElementById("toggleStats").addEventListener("change", updateStatsDisplay);
     document.getElementById("toggleTimer").addEventListener("change", updateTimerDisplay);
+    document.getElementById("togglePlayers").addEventListener("change", updatePlayersDisplay);
+
+    // Spieler-Management Event Listeners
+    document.getElementById("addPlayer").addEventListener("click", addPlayer);
+    document.getElementById("resetAllPlayers").addEventListener("click", resetAllPlayers);
+
+    // Toggle-Funktionen für die neuen Optionen
+    function updateStatsDisplay() {
+      const showStats = document.getElementById('toggleStats').checked;
+      const statsElement = document.getElementById('stats');
+      
+      if (showStats && lastValues.length > 0) {
+        // Neu berechnen und anzeigen
+        displayRoll(lastValues);
+      } else {
+        statsElement.innerHTML = '';
+      }
+    }
 
     function updateFifthDisplay() {
       const list2 = document.getElementById("list2");
