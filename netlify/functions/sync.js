@@ -169,7 +169,7 @@ exports.handler = async (event, context) => {
           roomId,
           sessionId,
           participantCount: room.getParticipantCount(),
-          joinUrl: `${event.headers.origin || 'https://benevolent-maamoul-196578.netlify.app'}?room=${roomId}`
+          joinUrl: `${event.headers.origin || 'https://ddd-dice-sync.netlify.app'}?room=${roomId}`
         })
       };
     }
