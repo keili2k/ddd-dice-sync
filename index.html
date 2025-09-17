@@ -1755,12 +1755,9 @@
         return;
       }
       
-      // Server URL - in Produktion anpassen
-      const serverUrl = window.location.protocol === 'https:' ? 
-        'wss://your-sync-server.com' : 
-        'ws://localhost:3001';
-      
-      syncClient = new DDDSyncClient(serverUrl);
+      // Für Netlify Functions wird keine Server URL benötigt
+      // Der Client erkennt automatisch die richtige URL
+      syncClient = new DDDSyncClient();
       
       // Event Callbacks setzen
       syncClient.onStatusChange = updateSyncStatus;
