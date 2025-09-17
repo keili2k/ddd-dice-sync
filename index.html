@@ -496,764 +496,10 @@
       animation: blink 1s infinite;
     }
 
-    @keyframes blink {
-      0%, 50% { opacity: 1; }
-      51%, 100% { opacity: 0.3; }
-    }
-
-    /* Header Controls */
-    .header-controls {
-      position: relative;
-      text-align: right;
-      margin-bottom: 30px;
-    }
-
-    .menu-button {
-      background: #6f42c1;
-      color: white;
-      border: none;
-      border-radius: 12px;
-      width: 60px;
-      height: 60px;
-      font-size: 28px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      position: relative;
-      z-index: 1000;
-      box-shadow: 0 4px 12px rgba(111, 66, 193, 0.3);
-    }
-
-    .menu-button:hover {
-      background: #5a2d8b;
-      transform: rotate(90deg) scale(1.1);
-      box-shadow: 0 6px 20px rgba(111, 66, 193, 0.4);
-    }
-
-    body.dark .menu-button {
-      background: #9f7aea;
-    }
-
-    body.dark .menu-button:hover {
-      background: #805ad5;
-    }
-
-    /* Menu Overlay */
-    .menu-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.8);
-      backdrop-filter: blur(5px);
-      z-index: 10000;
-      display: none;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-
-    .menu-overlay.show {
-      display: flex;
-      opacity: 1;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .menu-content {
-      background: white;
-      border-radius: 20px;
-      padding: 25px;
-      max-width: 500px;
-      width: 90%;
-      max-height: 90vh;
-      overflow-y: auto;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-      transform: scale(0.8);
-      transition: transform 0.3s ease;
-    }
-
-    .menu-overlay.show .menu-content {
-      transform: scale(1);
-    }
-
-    body.dark .menu-content {
-      background: #2d3748;
-      color: #e2e8f0;
-    }
-
-    .menu-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      border-bottom: 2px solid #e2e8f0;
-      padding-bottom: 15px;
-    }
-
-    body.dark .menu-header {
-      border-bottom-color: #4a5568;
-    }
-
-    .menu-header h3 {
-      margin: 0;
-      color: #4a5568;
-      font-size: 1.3em;
-    }
-
-    body.dark .menu-header h3 {
-      color: #e2e8f0;
-    }
-
-    .close-button {
-      background: #dc3545;
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      font-size: 20px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .close-button:hover {
-      background: #c82333;
-      transform: rotate(90deg);
-    }
-
-    /* Menu Sections */
-    .menu-section {
-      margin-bottom: 20px;
-      padding: 15px;
-      background: #f8f9fa;
-      border-radius: 12px;
-      border-left: 4px solid #6f42c1;
-    }
-
-    body.dark .menu-section {
-      background: #4a5568;
-      border-left-color: #9f7aea;
-    }
-
-    .menu-section h4 {
-      margin: 0 0 15px 0;
-      color: #495057;
-      font-size: 1.1em;
-    }
-
-    body.dark .menu-section h4 {
-      color: #e2e8f0;
-    }
-
-    /* Button Styles */
-    .button-row {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .menu-action-button {
-      padding: 10px 16px;
-      border: none;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      flex: 1;
-      min-width: 120px;
-    }
-
-    .menu-action-button.primary {
-      background: #007bff;
-      color: white;
-    }
-
-    .menu-action-button.primary:hover {
-      background: #0056b3;
-      transform: translateY(-2px);
-    }
-
-    .menu-action-button.success {
-      background: #28a745;
-      color: white;
-    }
-
-    .menu-action-button.success:hover {
-      background: #218838;
-      transform: translateY(-2px);
-    }
-
-    .menu-action-button.danger {
-      background: #dc3545;
-      color: white;
-    }
-
-    .menu-action-button.danger:hover {
-      background: #c82333;
-      transform: translateY(-2px);
-    }
-
-    .menu-action-button.secondary {
-      background: #6c757d;
-      color: white;
-    }
-
-    .menu-action-button.secondary:hover {
-      background: #545b62;
-      transform: translateY(-2px);
-    }
-
-    .menu-action-button.small {
-      padding: 6px 12px;
-      font-size: 12px;
-      min-width: 80px;
-    }
-
-    .menu-action-button:not(.primary):not(.success):not(.danger):not(.secondary) {
-      background: #6f42c1;
-      color: white;
-    }
-
-    .menu-action-button:not(.primary):not(.success):not(.danger):not(.secondary):hover {
-      background: #5a2d8b;
-      transform: translateY(-2px);
-    }
-
-    /* Toggle Controls */
-    .toggle-controls {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .toggle-label {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 500;
-      color: #495057;
-      padding: 8px;
-      border-radius: 6px;
-      transition: background 0.3s ease;
-    }
-
-    .toggle-label:hover {
-      background: rgba(111, 66, 193, 0.1);
-    }
-
-    body.dark .toggle-label {
-      color: #e2e8f0;
-    }
-
-    body.dark .toggle-label:hover {
-      background: rgba(159, 122, 234, 0.2);
-    }
-
-    .toggle-label input[type="checkbox"] {
-      transform: scale(1.3);
-      accent-color: #6f42c1;
-    }
-
-    /* Timer Controls Compact */
-    .timer-controls-compact {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .compact-select {
-      padding: 6px 10px;
-      border: 2px solid #6f42c1;
-      border-radius: 6px;
-      font-size: 14px;
-      background: white;
-      color: #6f42c1;
-      cursor: pointer;
-      min-width: 80px;
-    }
-
-    body.dark .compact-select {
-      background: #4a5568;
-      border-color: #9f7aea;
-      color: #9f7aea;
-    }
-
-    .compact-button {
-      padding: 6px 12px;
-      border: none;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      white-space: nowrap;
-    }
-
-    .compact-button.timer-button {
-      background: #6f42c1;
-      color: white;
-    }
-
-    .compact-button.timer-button:hover:not(:disabled) {
-      background: #5a2d8b;
-      transform: translateY(-1px);
-    }
-
-    .compact-button:disabled {
-      background: #6c757d;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    body.dark .compact-button.timer-button {
-      background: #9f7aea;
-    }
-
-    body.dark .compact-button.timer-button:hover:not(:disabled) {
-      background: #805ad5;
-    }
-
-    /* Sync Controls */
-    .sync-status {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px;
-      border-radius: 8px;
-      background: white;
-      margin-bottom: 15px;
-      font-weight: 600;
-      font-size: 14px;
-      border: 2px solid #e9ecef;
-    }
-
-    body.dark .sync-status {
-      background: #2d3748;
-      border-color: #4a5568;
-    }
-
-    .status-indicator {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      animation: pulse 2s infinite;
-    }
-
-    .status-indicator.offline {
-      background: #6c757d;
-    }
-
-    .status-indicator.connecting {
-      background: #ffc107;
-    }
-
-    .status-indicator.online {
-      background: #28a745;
-    }
-
-    .sync-controls {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .join-room-row {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-
-    #roomIdInput {
-      flex: 1;
-      padding: 8px 12px;
-      border: 2px solid #6f42c1;
-      border-radius: 6px;
-      font-size: 14px;
-      text-transform: uppercase;
-      text-align: center;
-      font-weight: bold;
-      letter-spacing: 1px;
-    }
-
-    body.dark #roomIdInput {
-      background: #2d3748;
-      color: #e2e8f0;
-      border-color: #9f7aea;
-    }
-
-    /* Room Info Compact */
-    .room-info {
-      background: #e7f5e7 !important;
-      border-left-color: #28a745 !important;
-      margin-top: 10px;
-    }
-
-    body.dark .room-info {
-      background: #2d5a3d !important;
-    }
-
-    .room-details-compact {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .room-id-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 14px;
-      flex-wrap: wrap;
-    }
-
-    .mini-button {
-      background: #17a2b8;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      padding: 2px 6px;
-      cursor: pointer;
-      font-size: 12px;
-      transition: all 0.3s ease;
-    }
-
-    .mini-button:hover {
-      background: #138496;
-    }
-
-    .participant-count {
-      color: #6c757d;
-      font-size: 12px;
-      margin-left: auto;
-    }
-
-    body.dark .participant-count {
-      color: #a0aec0;
-    }
-
-    /* QR Code Compact */
-    .qr-section {
-      background: #e3f2fd !important;
-      border-left-color: #2196f3 !important;
-      text-align: center;
-      margin-top: 10px;
-    }
-
-    body.dark .qr-section {
-      background: #1e3a5f !important;
-    }
-
-    .qr-code-compact {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 120px;
-      background: white;
-      border-radius: 8px;
-      margin: 10px 0;
-      padding: 10px;
-    }
-
-    body.dark .qr-code-compact {
-      background: #f8f9fa;
-    }
-
-    .qr-info-compact {
-      font-size: 12px;
-      color: #6c757d;
-      margin: 0;
-    }
-
-    body.dark .qr-info-compact {
-      color: #a0aec0;
-    }
-
-    /* Timer Display */
-    .countdown-container {
-      background: #f8f9fa;
-      border-radius: 12px;
-      padding: 20px;
-      margin: 20px auto;
-      border-left: 4px solid #6f42c1;
-      text-align: center;
-      max-width: 400px;
-    }
-
-    body.dark .countdown-container {
-      background: #2d3748;
-      border-left-color: #9f7aea;
-    }
-
-    .countdown-display {
-      font-size: 48px;
-      font-weight: bold;
-      text-align: center;
-      margin: 10px 0;
-      color: #6f42c1;
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    body.dark .countdown-display {
-      color: #9f7aea;
-    }
-
-    .countdown-display.warning {
-      color: #ffc107;
-      animation: pulse 1s infinite;
-    }
-
-    .countdown-display.danger {
-      color: #dc3545;
-      animation: pulse 0.5s infinite;
-    }
-
-    .timer-status {
-      text-align: center;
-      font-size: 16px;
-      font-weight: 600;
-      margin-top: 10px;
-    }
-
-    .timer-status.running {
-      color: #28a745;
-    }
-
-    .timer-status.finished {
-      color: #dc3545;
-      animation: blink 1s infinite;
-    }
-
-    /* Statistics 2x2 Layout */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 15px;
-      margin-top: 15px;
-    }
-
-    /* Debug Section */
-    .debug-section {
-      border-left-color: #ffc107 !important;
-      background: #fff8e1 !important;
-    }
-
-    body.dark .debug-section {
-      background: #5a4a00 !important;
-    } #4a5568;
-      border-left-color: #9f7aea;
-    }
-
-    .room-section h4 {
-      margin-bottom: 15px;
-      color: #495057;
-    }
-
-    body.dark .room-section h4 {
-      color: #e2e8f0;
-    }
-
-    .join-controls {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    #roomIdInput {
-      flex: 1;
-      padding: 12px;
-      border: 2px solid #6f42c1;
-      border-radius: 8px;
-      font-size: 16px;
-      text-transform: uppercase;
-      text-align: center;
-      font-weight: bold;
-      letter-spacing: 2px;
-    }
-
-    body.dark #roomIdInput {
-      background: #2d3748;
-      color: #e2e8f0;
-      border-color: #9f7aea;
-    }
-
-    .sync-button {
-      padding: 12px 20px;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      white-space: nowrap;
-    }
-
-    .sync-button.primary {
-      background: #28a745;
-      color: white;
-    }
-
-    .sync-button.primary:hover {
-      background: #218838;
-      transform: translateY(-2px);
-    }
-
-    .sync-button.danger {
-      background: #dc3545;
-      color: white;
-    }
-
-    .sync-button.danger:hover {
-      background: #c82333;
-      transform: translateY(-2px);
-    }
-
-    .sync-button:not(.primary):not(.danger) {
-      background: #6f42c1;
-      color: white;
-    }
-
-    .sync-button:not(.primary):not(.danger):hover {
-      background: #5a2d8b;
-      transform: translateY(-2px);
-    }
-
-    /* Room Info */
-    .room-info {
-      background: #e7f5e7;
-      border-left-color: #28a745 !important;
-    }
-
-    body.dark .room-info {
-      background: #2d5a3d;
-    }
-
-    .room-details {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-    }
-
-    .room-id {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .copy-button {
-      background: #17a2b8;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      padding: 6px 10px;
-      cursor: pointer;
-      font-size: 14px;
-      transition: all 0.3s ease;
-    }
-
-    .copy-button:hover {
-      background: #138496;
-    }
-
-    /* QR Code */
-    .qr-section {
-      background: #e3f2fd;
-      border-left-color: #2196f3 !important;
-      text-align: center;
-    }
-
-    body.dark .qr-section {
-      background: #1e3a5f;
-    }
-
-    .qr-code-container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 200px;
-      background: white;
-      border-radius: 10px;
-      margin: 15px 0;
-      padding: 20px;
-    }
-
-    body.dark .qr-code-container {
-      background: #f8f9fa;
-    }
-
-    .qr-info {
-      font-size: 14px;
-      color: #6c757d;
-      margin: 0;
-    }
-
-    body.dark .qr-info {
-      color: #a0aec0;
-    }
-
-    /* Connected Indicator */
-    .dice-row.synced {
-      border: 3px solid #28a745;
-      border-radius: 15px;
-      padding: 15px;
-      background: rgba(40, 167, 69, 0.05);
-      position: relative;
-    }
-
-    .dice-row.synced::before {
-      content: "🔗 SYNCHRONISIERT";
-      position: absolute;
-      top: -10px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #28a745;
-      color: white;
-      padding: 4px 12px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: bold;
-    }
-
-    body.dark .dice-row.synced {
-      border-color: #48bb78;
-      background: rgba(72, 187, 120, 0.1);
-    }
-
-    body.dark .dice-row.synced::before {
-      background: #48bb78;
-    }
-
     /* Mobile Anpassungen */
     @media (max-width: 768px) {
       body {
         margin: 1em;
-      }
-      
-      .header-controls {
-        flex-direction: column;
-        align-items: stretch;
-      }
-      
-      .left-controls {
-        justify-content: center;
-      }
-      
-      .menu-button {
-        align-self: flex-end;
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 1001;
-      }
-      
-      .menu-content {
-        width: 95%;
-        padding: 20px;
-        max-height: 85vh;
       }
       
       .countdown-controls {
@@ -1349,6 +595,28 @@
       to {
         transform: translateX(0);
         opacity: 1;
+      }
+    }-display {
+        gap: 8px;
+      }
+      
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      #result {
+        max-width: 100%;
+      }
+      
+      .pair-line {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+      }
+      
+      .sum-display {
+        font-size: 18px;
+        min-width: auto;
       }
     }
   </style>
@@ -1561,7 +829,7 @@
       const dice = document.getElementById(id);
       const faces = ['front','back','right','left','top','bottom'];
       const pipsMap = {
-        1: [['p1']],
+      1: [['p1']],
         2: [['p2'], ['p3']],
         3: [['p2'], ['p1'], ['p3']],
         4: [['p2'], ['p4'], ['p5'], ['p3']],
@@ -1719,18 +987,15 @@
 
     // Initialisiere Sync Client
     function initSyncClient() {
-    // Überprüfe ob sync-client.js geladen wurde
+      // Überprüfe ob sync-client.js geladen wurde
       if (typeof DDDSyncClient === 'undefined') {
         console.warn('sync-client.js nicht gefunden - lokaler Modus');
         return;
       }
       
-      // Server URL - in Produktion anpassen
-      const serverUrl = window.location.protocol === 'https:' ? 
-        'wss://ddd-dice-sync.netlify.app' : 
-        'ws://localhost:3001';
-      
-      syncClient = new DDDSyncClient(serverUrl);
+      // Für Netlify Functions wird keine Server URL benötigt
+      // Der Client erkennt automatisch die richtige URL
+      syncClient = new DDDSyncClient();
       
       // Event Callbacks setzen
       syncClient.onStatusChange = updateSyncStatus;
@@ -2025,39 +1290,75 @@
         return uses5 && !set4.has(s.key);
       });
 
-      // Statistiken anzeigen
-      const totalCombinations4 = 6 ** 4;
-      const totalCombinations5 = 6 ** 5;
-      
-      document.getElementById("stats").innerHTML = `
-        <div class="stats-panel">
-          <h3>📊 Statistiken</h3>
-          <div class="stats-grid">
-            <div class="stat-item">
-              <span class="stat-value">${splits4.length}</span>
-              <div class="stat-label">Gefundene Paare (4 Würfel)</div>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value">${lastSplits5unique.length}</span>
-              <div class="stat-label">Zusätzliche Paare (5. Würfel)</div>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value">${totalCombinations4}</span>
-              <div class="stat-label">Mögliche 4-Würfel Kombinationen</div>
-            </div>
-            <div class="stat-item">
-              <span class="stat-value">${totalCombinations5}</span>
-              <div class="stat-label">Mögliche 5-Würfel Kombinationen</div>
+      // Statistiken anzeigen (nur wenn aktiviert)
+      if (document.getElementById('toggleStats').checked) {
+        const totalCombinations4 = 6 ** 4;
+        const totalCombinations5 = 6 ** 5;
+        
+        document.getElementById("stats").innerHTML = `
+          <div class="stats-panel compact">
+            <h3>📊 Statistiken</h3>
+            <div class="stats-grid">
+              <div class="stat-item">
+                <span class="stat-value">${splits4.length}</span>
+                <div class="stat-label">Gefundene Paare (4 Würfel)</div>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value">${lastSplits5unique.length}</span>
+                <div class="stat-label">Zusätzliche Paare (5. Würfel)</div>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value">${totalCombinations4}</span>
+                <div class="stat-label">Mögliche 4-Würfel Kombinationen</div>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value">${totalCombinations5}</span>
+                <div class="stat-label">Mögliche 5-Würfel Kombinationen</div>
+              </div>
             </div>
           </div>
-        </div>
-      `;
+        `;
+      } else {
+        document.getElementById("stats").innerHTML = '';
+      }
 
       document.getElementById("list1").innerHTML =
         '<div class="section-title">🎯 Liste 1 (nur Würfel 1–4)</div>' + 
         formatSplitsWithProbability(splits4, allPossibleSplits4);
 
       updateFifthDisplay();
+      updateTimerDisplay();
+    }
+
+    // Toggle-Funktionen für die neuen Optionen
+    function updateStatsDisplay() {
+      const showStats = document.getElementById('toggleStats').checked;
+      const statsElement = document.getElementById('stats');
+      
+      if (showStats && lastValues.length > 0) {
+        // Neu berechnen und anzeigen
+        displayRoll(lastValues);
+      } else {
+        statsElement.innerHTML = '';
+      }
+    }
+
+    function updateTimerDisplay() {
+      const showTimer = document.getElementById('toggleTimer').checked;
+      const timerContainer = document.getElementById('countdownContainer');
+      const timerSection = document.getElementById('timerSection');
+      
+      if (showTimer) {
+        timerContainer.classList.remove('hidden');
+        timerSection.style.display = 'block';
+      } else {
+        timerContainer.classList.add('hidden');
+        timerSection.style.display = 'none';
+        // Timer stoppen falls er läuft
+        if (isTimerRunning) {
+          stopTimer();
+        }
+      }
     }
 
     function rollAndCalc() {
@@ -2071,11 +1372,14 @@
       displayRoll(values);
     }
 
+    // Event Listeners aktualisieren
     document.getElementById("toggleFifth").addEventListener("change", updateFifthDisplay);
+    document.getElementById("toggleStats").addEventListener("change", updateStatsDisplay);
+    document.getElementById("toggleTimer").addEventListener("change", updateTimerDisplay);
 
     function updateFifthDisplay() {
       const list2 = document.getElementById("list2");
-      const showFifth = !document.getElementById("toggleFifth").checked;
+      const showFifth = document.getElementById("toggleFifth").checked;
 
       if (showFifth && lastSplits5unique.length > 0) {
         list2.innerHTML =
@@ -2107,6 +1411,12 @@
       }
     });
 
+    // Würfeln Button im Menü
+    document.getElementById('rollButton').addEventListener('click', () => {
+      rollAndCalc();
+      document.getElementById('menuOverlay').classList.remove('show');
+    });
+
     document.getElementById('createRoom').addEventListener('click', createRoom);
     document.getElementById('joinRoom').addEventListener('click', joinRoom);
     document.getElementById('leaveRoom').addEventListener('click', leaveRoom);
@@ -2118,11 +1428,24 @@
 
       const btn = document.getElementById("toggleDark");
       if (document.body.classList.contains("dark")) {
-        btn.textContent = "🌞 Darkmode deaktivieren";
+        btn.textContent = "🌞 Lightmode";
       } else {
-        btn.textContent = "🌙 Darkmode aktivieren";
+        btn.textContent = "🌙 Darkmode";
       }
     });
+
+    // Debug-Funktionalität (nur in Development)
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      document.getElementById('debugSection').style.display = 'block';
+      document.getElementById('debugInfo').addEventListener('click', () => {
+        if (syncClient) {
+          console.log('Debug Info:', syncClient.getDebugInfo());
+          alert(JSON.stringify(syncClient.getDebugInfo(), null, 2));
+        } else {
+          alert('Sync Client nicht initialisiert');
+        }
+      });
+    }
 
     // URL Parameter prüfen für Auto-Join
     function checkURLParams() {
