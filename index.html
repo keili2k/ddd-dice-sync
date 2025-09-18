@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <title>Companion für Dungeons, Dice & Danger</title>
+  <title>Drehbare Würfel + Paarsummen mit Wahrscheinlichkeiten</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -1876,16 +1876,61 @@
       <div class="menu-section manual-dice-section" id="manualDiceSection" style="display: none;">
         <h4>🎯 Würfel-Werte einstellen</h4>
         <div class="manual-dice-controls">
-          ${[1, 2, 3, 4, 5].map(diceIndex => `
-            <div class="manual-die-control">
-              <label>Würfel ${diceIndex}${diceIndex === 5 ? ' (schwarz)' : ''}:</label>
-              <select id="manualDie-${diceIndex}" onchange="setDiceValue(${diceIndex}, this.value)">
-                ${[1, 2, 3, 4, 5, 6].map(value => `
-                  <option value="${value}">${value}</option>
-                `).join('')}
-              </select>
-            </div>
-          `).join('')}
+          <div class="manual-die-control">
+            <label>Würfel 1:</label>
+            <select id="manualDie-1" onchange="setDiceValue(1, this.value)">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+            </select>
+          </div>
+          <div class="manual-die-control">
+            <label>Würfel 2:</label>
+            <select id="manualDie-2" onchange="setDiceValue(2, this.value)">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+            </select>
+          </div>
+          <div class="manual-die-control">
+            <label>Würfel 3:</label>
+            <select id="manualDie-3" onchange="setDiceValue(3, this.value)">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+            </select>
+          </div>
+          <div class="manual-die-control">
+            <label>Würfel 4:</label>
+            <select id="manualDie-4" onchange="setDiceValue(4, this.value)">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+            </select>
+          </div>
+          <div class="manual-die-control">
+            <label>Würfel 5 (schwarz):</label>
+            <select id="manualDie-5" onchange="setDiceValue(5, this.value)">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+            </select>
+          </div>
           <button id="applyManualDice" class="menu-action-button primary">✓ Werte übernehmen</button>
         </div>
       </div>
