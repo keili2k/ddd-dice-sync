@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <title>Drehbare Würfel + Paarsummen mit Wahrscheinlichkeiten</title>
+  <title>Spielhilfe Dungeons, Dice & Danger</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -1219,9 +1219,80 @@
       box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
     }
 
+    /* Eigenes Spieler-Board */
+    .player-dashboard.own-player {
+      border-left-color: #28a745;
+      box-shadow: 0 8px 16px rgba(40, 167, 69, 0.2);
+    }
+
+    .player-dashboard.own-player::before {
+      content: "👤 Mein Board";
+      position: absolute;
+      top: -8px;
+      left: 15px;
+      background: #28a745;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: bold;
+    }
+
+    /* Readonly Spieler-Boards */
+    .player-dashboard.readonly {
+      opacity: 0.7;
+      border-left-color: #6c757d;
+    }
+
+    .player-dashboard.readonly input {
+      cursor: not-allowed;
+    }
+
+    .player-dashboard.readonly input:disabled {
+      opacity: 0.6;
+    }
+
+    /* Minimierte Boards */
+    .player-dashboard.minimized {
+      transform: scale(0.75);
+      margin: -10px;
+      grid-column: span 1;
+    }
+
+    .player-dashboard.minimized .health-bar,
+    .player-dashboard.minimized .black-dice-grid,
+    .player-dashboard.minimized .treasure-section {
+      zoom: 0.8;
+    }
+
+    /* Mobile Anpassung für minimierte Boards */
+    @media (max-width: 768px) {
+      .player-dashboard.minimized {
+        transform: scale(0.65);
+        margin: -15px;
+      }
+      
+      .players-container {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      }
+    }
+
     body.dark .player-dashboard {
       background: #2d3748;
       border-left-color: #4299e1;
+    }
+
+    body.dark .player-dashboard.own-player {
+      border-left-color: #48bb78;
+      box-shadow: 0 8px 16px rgba(72, 187, 120, 0.2);
+    }
+
+    body.dark .player-dashboard.own-player::before {
+      background: #48bb78;
+    }
+
+    body.dark .player-dashboard.readonly {
+      border-left-color: #a0aec0;
     }
 
     .player-header {
@@ -1254,12 +1325,32 @@
       background: #f7fafc;
     }
 
+    .player-name-display {
+      font-size: 1.2em;
+      font-weight: bold;
+      color: #2d3748;
+      padding: 5px;
+    }
+
     body.dark .player-name {
       color: #e2e8f0;
     }
 
     body.dark .player-name:focus {
       background: #4a5568;
+    }
+
+    body.dark .player-name-display {
+      color: #e2e8f0;
+    }
+
+    .readonly-badge {
+      font-size: 0.8em;
+      background: #6c757d;
+      color: white;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 10px;
     }
 
     .remove-player {
@@ -1815,7 +1906,7 @@
   </style>
 </head>
 <body>
-  <h1>🎲 Drehbare Würfel + Paarsummen mit Wahrscheinlichkeiten</h1>
+  <h1>🎲 Spielhilfe Dungeons, Dice & Danger</h1>
   
   <div class="header-controls">
     <button id="menuButton" class="menu-button">☰</button>
@@ -2315,10 +2406,14 @@
         document.getElementById('roomInfo').style.display = 'block';
         addSyncIndicator();
         showQRCode(roomData.roomId);
+        
+        // Behandle Raum-Beitritt
+        handleRoomJoin(roomData.participantCount);
       } else {
         document.getElementById('roomInfo').style.display = 'none';
         document.getElementById('qrSection').style.display = 'none';
         removeSyncIndicator();
+        roomPlayerCount = 0;
       }
     }
 
@@ -2626,35 +2721,46 @@
     // Spieler-Management
     let players = [];
     let nextPlayerId = 1;
+    let myPlayerId = null; // ID des eigenen Spieler-Boards
+    let roomPlayerCount = 0; // Anzahl der Spieler im Raum
+    let maxActivePlayers = 4; // Maximal 4 aktive Spieler
 
-    function createPlayerDashboard(playerId, playerName = '') {
+    function createPlayerDashboard(playerId, playerName = '', isOwn = false, isReadOnly = false) {
       const player = {
         id: playerId,
         name: playerName || `Spieler ${playerId}`,
-        health: 20, // Startwert
-        blackDice: [false, false, false], // 3 schwarze Würfel
+        health: 20,
+        blackDice: [false, false, false],
         treasure: {
-          heart: [false, false, false], // 3 Herzen
-          torch: [false, false], // 2 Fackeln
-          dice: [false, false, false] // 3 Würfel
+          heart: [false, false, false],
+          torch: [false, false],
+          dice: [false, false, false]
         },
         treasureCategories: {
           heart: false,
           torch: false,
           dice: false
-        }
+        },
+        isOwn: isOwn,
+        isReadOnly: isReadOnly
       };
       
       const dashboard = document.createElement('div');
-      dashboard.className = 'player-dashboard';
+      dashboard.className = `player-dashboard ${isOwn ? 'own-player' : ''} ${isReadOnly ? 'readonly minimized' : ''}`;
       dashboard.id = `player-${playerId}`;
       
+      // Header - nur bei eigenem Board editierbar
+      const headerContent = isOwn ? 
+        `<input type="text" class="player-name" value="${player.name}" 
+                onchange="updatePlayerName(${playerId}, this.value)" 
+                placeholder="Ihr Name">
+         <button class="remove-player" onclick="removePlayer(${playerId})" title="Spieler entfernen">×</button>` :
+        `<div class="player-name-display">${player.name}</div>
+         ${isReadOnly ? '<span class="readonly-badge">👀 Nur lesend</span>' : ''}`;
+
       dashboard.innerHTML = `
         <div class="player-header">
-          <input type="text" class="player-name" value="${player.name}" 
-                 onchange="updatePlayerName(${playerId}, this.value)" 
-                 placeholder="Spieler Name">
-          <button class="remove-player" onclick="removePlayer(${playerId})" title="Spieler entfernen">×</button>
+          ${headerContent}
         </div>
         
         <div class="health-section">
@@ -2663,14 +2769,14 @@
             ${[0, 0, 1, 2, 4, 6, 9, 12, 16, 20].map(value => `
               <div class="health-option">
                 <input type="radio" id="health-${playerId}-${value}" name="health-${playerId}" 
-                       value="${value}" class="health-radio" ${value === 20 ? 'checked' : ''}
+                       value="${value}" class="health-radio" ${value === 20 ? 'checked' : ''} ${isReadOnly ? 'disabled' : ''}
                        onchange="updatePlayerHealth(${playerId}, ${value})">
                 <label for="health-${playerId}-${value}" class="health-label">${value}</label>
               </div>
             `).join('')}
             <div class="health-option">
               <input type="radio" id="health-${playerId}-dead" name="health-${playerId}" 
-                     value="dead" class="health-radio" onchange="updatePlayerHealth(${playerId}, 'dead')">
+                     value="dead" class="health-radio" ${isReadOnly ? 'disabled' : ''} onchange="updatePlayerHealth(${playerId}, 'dead')">
               <label for="health-${playerId}-dead" class="health-label dead">💀 TOT</label>
             </div>
           </div>
@@ -2681,7 +2787,7 @@
           <div class="black-dice-grid">
             ${[0, 1, 2].map(index => `
               <div class="black-die-item">
-                <input type="checkbox" class="black-die-checkbox" id="blackdie-${playerId}-${index}"
+                <input type="checkbox" class="black-die-checkbox" id="blackdie-${playerId}-${index}" ${isReadOnly ? 'disabled' : ''}
                        onchange="updateBlackDie(${playerId}, ${index}, this.checked)">
                 <div class="black-die-icon">🎯</div>
               </div>
@@ -2692,7 +2798,7 @@
         <div class="treasure-section">
           <div class="treasure-category" id="treasure-heart-${playerId}">
             <div class="treasure-category-header">
-              <input type="checkbox" class="treasure-category-checkbox" id="category-heart-${playerId}"
+              <input type="checkbox" class="treasure-category-checkbox" id="category-heart-${playerId}" ${isReadOnly ? 'disabled' : ''}
                      onchange="updateTreasureCategory(${playerId}, 'heart', this.checked)">
               <span class="treasure-icon">❤️ ➕ 💎</span>
               <div class="treasure-label">Herz/Diamant</div>
@@ -2708,7 +2814,7 @@
           
           <div class="treasure-category" id="treasure-torch-${playerId}">
             <div class="treasure-category-header">
-              <input type="checkbox" class="treasure-category-checkbox" id="category-torch-${playerId}"
+              <input type="checkbox" class="treasure-category-checkbox" id="category-torch-${playerId}" ${isReadOnly ? 'disabled' : ''}
                      onchange="updateTreasureCategory(${playerId}, 'torch', this.checked)">
               <span class="treasure-icon">🔦</span>
               <div class="treasure-label">Fackel</div>
@@ -2724,7 +2830,7 @@
           
           <div class="treasure-category" id="treasure-dice-${playerId}">
             <div class="treasure-category-header">
-              <input type="checkbox" class="treasure-category-checkbox" id="category-dice-${playerId}"
+              <input type="checkbox" class="treasure-category-checkbox" id="category-dice-${playerId}" ${isReadOnly ? 'disabled' : ''}
                      onchange="updateTreasureCategory(${playerId}, 'dice', this.checked)">
               <span class="treasure-icon">🎲</span>
               <div class="treasure-label">Würfel</div>
@@ -2744,27 +2850,100 @@
       return dashboard;
     }
 
+    function initializeMyPlayer() {
+      // Erstelle eigenes Spieler-Board wenn noch keins existiert
+      if (myPlayerId === null && players.length === 0) {
+        myPlayerId = nextPlayerId;
+        const dashboard = createPlayerDashboard(myPlayerId, 'Mein Spieler', true, false);
+        document.getElementById('playersContainer').appendChild(dashboard);
+        nextPlayerId++;
+      }
+    }
+
+    function handleRoomJoin(participantCount) {
+      roomPlayerCount = participantCount;
+      
+      // Wenn mehr als 4 Spieler, zeige nur eigenes Board und andere als readonly
+      updatePlayerDisplayModes();
+    }
+
+    function updatePlayerDisplayModes() {
+      players.forEach((player, index) => {
+        const dashboard = document.getElementById(`player-${player.id}`);
+        if (!dashboard) return;
+
+        // Eigenes Board immer normal anzeigen
+        if (player.isOwn) {
+          dashboard.className = 'player-dashboard own-player';
+          return;
+        }
+
+        // Andere Spieler-Boards
+        if (roomPlayerCount <= maxActivePlayers) {
+          // Bis zu 4 Spieler: Alle Boards normal, andere nur lesend
+          if (index < maxActivePlayers) {
+            dashboard.className = 'player-dashboard';
+            setPlayerReadOnly(player.id, false);
+          } else {
+            dashboard.className = 'player-dashboard readonly minimized';
+            setPlayerReadOnly(player.id, true);
+          }
+        } else {
+          // Mehr als 4 Spieler: Alle anderen Boards minimiert und readonly
+          dashboard.className = 'player-dashboard readonly minimized';
+          setPlayerReadOnly(player.id, true);
+        }
+      });
+    }
+
+    function setPlayerReadOnly(playerId, readonly) {
+      const player = players.find(p => p.id === playerId);
+      if (!player || player.isOwn) return;
+
+      player.isReadOnly = readonly;
+
+      // Alle Inputs des Spielers aktivieren/deaktivieren
+      const dashboard = document.getElementById(`player-${playerId}`);
+      const inputs = dashboard.querySelectorAll('input:not(.player-name)');
+      inputs.forEach(input => {
+        input.disabled = readonly;
+      });
+    }
+
     function addPlayer() {
-      const playersContainer = document.getElementById('playersContainer');
-      const dashboard = createPlayerDashboard(nextPlayerId);
-      playersContainer.appendChild(dashboard);
+      // Prüfe ob Limit erreicht
+      if (players.length >= 8) { // Max 8 Boards insgesamt (4 aktiv + 4 readonly)
+        alert('Maximum von 8 Spieler-Boards erreicht!');
+        return;
+      }
+
+      const isReadOnly = players.length >= maxActivePlayers && !players.some(p => p.isOwn);
+      const dashboard = createPlayerDashboard(nextPlayerId, '', false, isReadOnly);
+      document.getElementById('playersContainer').appendChild(dashboard);
       nextPlayerId++;
       
-      // Synchronisiere neue Spieler falls verbunden
+      updatePlayerDisplayModes();
+      
       if (syncClient && syncClient.currentRoomId) {
         syncPlayerData();
       }
     }
 
     function removePlayer(playerId) {
+      // Eigenen Spieler nicht löschen lassen
+      if (playerId === myPlayerId) {
+        alert('Sie können Ihr eigenes Spieler-Board nicht löschen!');
+        return;
+      }
+
       const dashboard = document.getElementById(`player-${playerId}`);
       if (dashboard) {
         dashboard.remove();
       }
       
       players = players.filter(p => p.id !== playerId);
+      updatePlayerDisplayModes();
       
-      // Synchronisiere entfernte Spieler falls verbunden
       if (syncClient && syncClient.currentRoomId) {
         syncPlayerData();
       }
@@ -2881,31 +3060,40 @@
     function resetAllPlayers() {
       if (confirm('Alle Spielerdaten zurücksetzen?')) {
         players.forEach(player => {
-          player.health = 20;
-          player.blackDice = [false, false, false];
-          player.treasure = {
-            heart: [false, false, false],
-            torch: [false, false],
-            dice: [false, false, false]
-          };
-          player.treasureCategories = {
-            heart: false,
-            torch: false,
-            dice: false
-          };
+          // Nur eigene und nicht-readonly Spieler zurücksetzen
+          if (!player.isReadOnly || player.isOwn) {
+            player.health = 20;
+            player.blackDice = [false, false, false];
+            player.treasure = {
+              heart: [false, false, false],
+              torch: [false, false],
+              dice: [false, false, false]
+            };
+            player.treasureCategories = {
+              heart: false,
+              torch: false,
+              dice: false
+            };
+          }
         });
         
         // UI aktualisieren
         players.forEach(player => {
+          if (player.isReadOnly && !player.isOwn) return; // Readonly Spieler nicht zurücksetzen
+          
           // Health zurücksetzen
-          document.getElementById(`health-${player.id}-20`).checked = true;
-          document.querySelectorAll(`input[name="health-${player.id}"]:not(#health-${player.id}-20)`).forEach(input => {
-            input.checked = false;
-          });
+          const healthRadio = document.getElementById(`health-${player.id}-20`);
+          if (healthRadio) {
+            healthRadio.checked = true;
+            document.querySelectorAll(`input[name="health-${player.id}"]:not(#health-${player.id}-20)`).forEach(input => {
+              input.checked = false;
+            });
+          }
           
           // Schwarze Würfel zurücksetzen
           [0, 1, 2].forEach(index => {
-            document.getElementById(`blackdie-${player.id}-${index}`).checked = false;
+            const checkbox = document.getElementById(`blackdie-${player.id}-${index}`);
+            if (checkbox) checkbox.checked = false;
           });
           
           // Schatztruhen-Kategorien zurücksetzen
@@ -2913,17 +3101,26 @@
             const categoryCheckbox = document.getElementById(`category-${type}-${player.id}`);
             const categoryDiv = document.getElementById(`treasure-${type}-${player.id}`);
             
-            categoryCheckbox.checked = false;
-            categoryCheckbox.disabled = false;
-            categoryDiv.classList.remove('disabled');
-            categoryDiv.classList.add('disabled');
+            if (categoryCheckbox) {
+              categoryCheckbox.checked = false;
+              if (!player.isReadOnly) {
+                categoryCheckbox.disabled = false;
+              }
+            }
+            
+            if (categoryDiv) {
+              categoryDiv.classList.remove('disabled');
+              categoryDiv.classList.add('disabled');
+            }
             
             // Individuelle Checkboxen zurücksetzen und deaktivieren
             const maxIndex = type === 'torch' ? 1 : 2;
             for (let i = 0; i <= maxIndex; i++) {
               const checkbox = document.getElementById(`${type}-${player.id}-${i}`);
-              checkbox.checked = false;
-              checkbox.disabled = true;
+              if (checkbox) {
+                checkbox.checked = false;
+                checkbox.disabled = true;
+              }
             }
           });
         });
@@ -2959,21 +3156,86 @@
       // Dies würde eine komplexere Merge-Logik erfordern
     }
 
-    function updateTimerDisplay() {
-      const showTimer = document.getElementById('toggleTimer').checked;
-      const timerContainer = document.getElementById('countdownContainer');
-      const timerSection = document.getElementById('timerSection');
+    // Würfel-Modi
+    let currentDiceMode = 'auto';
+    let manualDiceValues = [1, 1, 1, 1, 1];
+
+    function handleDiceClick() {
+      if (currentDiceMode === 'auto') {
+        rollAndCalc();
+      }
+      // Im manuellen Modus passiert nichts beim Klick
+    }
+
+    function updateDiceMode() {
+      const autoMode = document.getElementById('diceMode-auto').checked;
+      const manualSection = document.getElementById('manualDiceSection');
+      const diceRow = document.getElementById('diceRow');
+      const modeInfo = document.getElementById('diceModeInfo');
       
-      if (showTimer) {
-        timerContainer.classList.remove('hidden');
-        timerSection.style.display = 'block';
+      currentDiceMode = autoMode ? 'auto' : 'manual';
+      
+      if (autoMode) {
+        manualSection.style.display = 'none';
+        diceRow.className = 'dice-row auto-mode';
+        modeInfo.textContent = 'Klicken Sie auf die Würfel oder den Würfeln-Button zum automatischen Würfeln';
       } else {
-        timerContainer.classList.add('hidden');
-        timerSection.style.display = 'none';
-        // Timer stoppen falls er läuft
-        if (isTimerRunning) {
-          stopTimer();
+        manualSection.style.display = 'block';
+        diceRow.className = 'dice-row manual-mode';
+        modeInfo.textContent = 'Stellen Sie die Würfelwerte manuell ein und übernehmen Sie sie';
+        
+        // Setze manuelle Werte auf aktuelle Würfelwerte falls vorhanden
+        if (lastValues.length > 0) {
+          lastValues.forEach((value, index) => {
+            const select = document.getElementById(`manualDie-${index + 1}`);
+            if (select) {
+              select.value = value;
+              manualDiceValues[index] = value;
+            }
+          });
         }
+      }
+    }
+
+    function setDiceValue(diceIndex, value) {
+      const numValue = parseInt(value);
+      manualDiceValues[diceIndex - 1] = numValue;
+      
+      // Bestimme die korrekte Würfel-ID
+      let diceId;
+      if (diceIndex === 5) {
+        diceId = 'dice5';
+      } else {
+        diceId = `d${diceIndex}`;
+      }
+      
+      // Direkt den Würfel zur entsprechenden Zahl drehen
+      animateDiceToValue(diceId, numValue);
+    }
+
+    function applyManualDice() {
+      // Manuelle Werte als Würfelergebnis setzen
+      displayRoll([...manualDiceValues]);
+      
+      // Synchronisiere falls verbunden
+      if (syncClient && syncClient.currentRoomId) {
+        syncClient.syncDiceRoll([...manualDiceValues]);
+      }
+      
+      // Menü schließen
+      document.getElementById('menuOverlay').classList.remove('show');
+    }
+
+    // Toggle-Funktionen für die neuen Optionen
+    function updateStatsDisplay() {
+      const showStats = document.getElementById('toggleStats').checked;
+      const statsElement = document.getElementById('stats');
+      
+      if (showStats && lastValues.length > 0) {
+        // Neu berechnen und anzeigen
+        displayRoll(lastValues);
+      } else {
+        statsElement.innerHTML = '';
       }
     }
 
@@ -3016,59 +3278,6 @@
       }
     }
 
-    // Würfel-Modi
-    let currentDiceMode = 'auto';
-    let manualDiceValues = [1, 1, 1, 1, 1];
-
-    function handleDiceClick() {
-      if (currentDiceMode === 'auto') {
-        rollAndCalc();
-      }
-      // Im manuellen Modus passiert nichts beim Klick
-    }
-
-    function updateDiceMode() {
-      const autoMode = document.getElementById('diceMode-auto').checked;
-      const manualSection = document.getElementById('manualDiceSection');
-      const diceRow = document.getElementById('diceRow');
-      const modeInfo = document.getElementById('diceModeInfo');
-      
-      currentDiceMode = autoMode ? 'auto' : 'manual';
-      
-      if (autoMode) {
-        manualSection.style.display = 'none';
-        diceRow.className = 'dice-row auto-mode';
-        modeInfo.textContent = 'Klicken Sie auf die Würfel oder den Würfeln-Button zum automatischen Würfeln';
-      } else {
-        manualSection.style.display = 'block';
-        diceRow.className = 'dice-row manual-mode';
-        modeInfo.textContent = 'Stellen Sie die Würfelwerte manuell ein und übernehmen Sie sie';
-        
-        // Setze manuelle Werte auf aktuelle Würfelwerte falls vorhanden
-        if (lastValues.length > 0) {
-          lastValues.forEach((value, index) => {
-            document.getElementById(`manualDie-${index + 1}`).value = value;
-            manualDiceValues[index] = value;
-          });
-        }
-      }
-    }
-
-    function setDiceValue(diceIndex, value) {
-      const numValue = parseInt(value);
-      manualDiceValues[diceIndex - 1] = numValue;
-      
-      // Bestimme die korrekte Würfel-ID
-      let diceId;
-      if (diceIndex === 5) {
-        diceId = 'dice5';
-      } else {
-        diceId = `d${diceIndex}`;
-      }
-      
-      // Direkt den Würfel zur entsprechenden Zahl drehen
-      animateDiceToValue(diceId, numValue);
-    }
 
     function applyManualDice() {
       // Manuelle Werte als Würfelergebnis setzen
