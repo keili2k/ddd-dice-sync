@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <title>Drehbare Würfel + Paarsummen mit Wahrscheinlichkeiten</title>
+  <title>Spielhilfe Dungeons, Dice & Danger</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -1814,7 +1814,7 @@
   </style>
 </head>
 <body>
-  <h1>🎲 Drehbare Würfel + Paarsummen mit Wahrscheinlichkeiten</h1>
+  <h1>🎲 Spielhilfe Dungeons, Dice & Danger/h1>
   
   <div class="header-controls">
     <button id="menuButton" class="menu-button">☰</button>
@@ -2321,7 +2321,7 @@
       // }
     // }
 
-    function updateRoomInfo(roomData) {
+function updateRoomInfo(roomData) {
       if (roomData.roomId) {
         document.getElementById('currentRoomId').textContent = roomData.roomId;
         document.getElementById('participantCount').textContent = roomData.participantCount;
@@ -2350,7 +2350,10 @@
         const syncedPlayers = players.filter(p => p.sessionId);
         syncedPlayers.forEach(player => {
           const dashboard = document.getElementById(`player-${player.id}`);
-          if (dashboar    function receivePlayerData(playersData) {
+          if (dashboard) {
+            dashboard.remove();
+          }
+        });    function receivePlayerData(playersData) {
       // Empfangene Spielerdaten anzeigen
       console.log('Received player data:', playersData);
       
@@ -2408,7 +2411,7 @@
       
       updatePlayerStatus();
     }
-
+        
     function receiveSyncedRoll(values) {
       console.log('Received synced roll:', values);
       displayRoll(values);
@@ -2657,7 +2660,7 @@
       ['d1','d2','d3','d4','dice5'].forEach((id, idx) => animateDiceToValue(id, values[idx]));
       
       document.getElementById("values").textContent = "Ergebnisse: " + values.join(", ");
-      document.getElementById("values").style.display = "block";
+      document.getElementById("values").style.display = "none";
 
       const arr4 = values.slice(0,4);
       const arr5 = values.slice();
