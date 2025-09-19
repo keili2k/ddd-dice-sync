@@ -2307,6 +2307,20 @@
       }
     }
 
+    // function updateRoomInfo(roomData) {
+      // if (roomData.roomId) {
+        // document.getElementById('currentRoomId').textContent = roomData.roomId;
+        // document.getElementById('participantCount').textContent = roomData.participantCount;
+        // document.getElementById('roomInfo').style.display = 'block';
+        // addSyncIndicator();
+        // showQRCode(roomData.roomId);
+      // } else {
+        // document.getElementById('roomInfo').style.display = 'none';
+        // document.getElementById('qrSection').style.display = 'none';
+        // removeSyncIndicator();
+      // }
+    // }
+
     function updateRoomInfo(roomData) {
       if (roomData.roomId) {
         document.getElementById('currentRoomId').textContent = roomData.roomId;
@@ -2314,11 +2328,85 @@
         document.getElementById('roomInfo').style.display = 'block';
         addSyncIndicator();
         showQRCode(roomData.roomId);
+        
+        // Automatisch eigenen Spieler erstellen wenn noch keiner vorhanden
+        if (!players.find(p => p.isOwn)) {
+          const playerId = nextPlayerId++;
+          const dashboard = createPlayerDashboard(playerId, `Spieler ${playerId}`, syncClient.sessionId);
+          const playersContainer = document.getElementById('playersContainer');
+          playersContainer.appendChild(dashboard);
+          
+          // Sync eigenen Spieler
+          setTimeout(() => {
+            syncPlayerData();
+          }, 500);
+        }
       } else {
         document.getElementById('roomInfo').style.display = 'none';
         document.getElementById('qrSection').style.display = 'none';
         removeSyncIndicator();
-      }
+        
+        // Entferne alle synchronisierten Spieler
+        const syncedPlayers = players.filter(p => p.sessionId);
+        syncedPlayers.forEach(player => {
+          const dashboard = document.getElementById(`player-${player.id}`);
+          if (dashboar    function receivePlayerData(playersData) {
+      // Empfangene Spielerdaten anzeigen
+      console.log('Received player data:', playersData);
+      
+      // Aktualisiere alle Spieler-Dashboards
+      playersData.forEach(syncedPlayer => {
+        let localPlayer = players.find(p => p.sessionId === syncedPlayer.sessionId);
+        
+        if (!localPlayer) {
+          // Neuer Spieler hinzufügen
+          const playerId = nextPlayerId++;
+          const dashboard = createPlayerDashboard(playerId, syncedPlayer.name, syncedPlayer.sessionId);
+          const playersContainer = document.getElementById('playersContainer');
+          playersContainer.appendChild(dashboard);
+          
+          // Lokalen Spieler erstellen
+          localPlayer = {
+            id: playerId,
+            name: syncedPlayer.name,
+            sessionId: syncedPlayer.sessionId,
+            health: syncedPlayer.health,
+            blackDice: [...syncedPlayer.blackDice],
+            treasure: JSON.parse(JSON.stringify(syncedPlayer.treasure)),
+            treasureCategories: {...syncedPlayer.treasureCategories},
+            isOwn: syncedPlayer.sessionId === syncClient.sessionId,
+            isActive: syncedPlayer.isActive
+          };
+          players.push(localPlayer);
+        } else {
+          // Bestehenden Spieler aktualisieren (nur wenn es nicht der eigene ist)
+          if (localPlayer.sessionId !== syncClient.sessionId) {
+            localPlayer.name = syncedPlayer.name;
+            localPlayer.health = syncedPlayer.health;
+            localPlayer.blackDice = [...syncedPlayer.blackDice];
+            localPlayer.treasure = JSON.parse(JSON.stringify(syncedPlayer.treasure));
+            localPlayer.treasureCategories = {...syncedPlayer.treasureCategories};
+            localPlayer.isActive = syncedPlayer.isActive;
+            
+            updatePlayerDashboardUI(localPlayer);
+          }
+        }
+      });
+      
+      // Entferne Spieler die nicht mehr da sind
+      const currentSessionIds = playersData.map(p => p.sessionId);
+      const playersToRemove = players.filter(p => !currentSessionIds.includes(p.sessionId));
+      
+      playersToRemove.forEach(player => {
+        const dashboard = document.getElementById(`player-${player.id}`);
+        if (dashboard) {
+          dashboard.remove();
+        }
+      });
+      
+      players = players.filter(p => currentSessionIds.includes(p.sessionId));
+      
+      updatePlayerStatus();
     }
 
     function receiveSyncedRoll(values) {
