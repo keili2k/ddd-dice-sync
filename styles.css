@@ -1805,3 +1805,270 @@
     .stats-panel.compact .stat-label {
       font-size: 12px;
     }
+/* Zusätzliche CSS Styles für styles.css - Player Management */
+
+/* Player Dashboard Status Styles */
+.player-dashboard.own {
+  background-color: #e8f5e9;
+  border-color: #4caf50;
+  border-width: 2px;
+}
+
+.player-dashboard.readonly {
+  background-color: #f5f5f5;
+  opacity: 0.85;
+}
+
+.player-dashboard.inactive {
+  background-color: #ffebee;
+  border-color: #f44336;
+  opacity: 0.7;
+}
+
+.player-dashboard.readonly input,
+.player-dashboard.readonly button:not(.remove-player) {
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* Player Status Indicator */
+.player-status {
+  font-size: 12px;
+  padding: 3px 8px;
+  background: #e3f2fd;
+  color: #1976d2;
+  border-radius: 15px;
+  margin-left: 10px;
+  white-space: nowrap;
+}
+
+.player-dashboard.own .player-status {
+  background: #e8f5e9;
+  color: #388e3c;
+}
+
+.player-dashboard.inactive .player-status {
+  background: #ffebee;
+  color: #d32f2f;
+}
+
+/* Max Players Warning */
+.max-players-warning {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  color: #856404;
+  padding: 12px;
+  margin: 15px 0;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+}
+
+.max-players-warning::before {
+  content: "⚠️";
+  margin-right: 10px;
+  font-size: 18px;
+}
+
+/* Room Info erweitert */
+.room-info-extended {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  align-items: center;
+  padding: 10px 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin: 10px 0;
+}
+
+.room-info-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.room-info-value {
+  font-weight: bold;
+  color: #2196f3;
+}
+
+/* Active Player Counter */
+.active-player-counter {
+  background: #e3f2fd;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.active-player-counter.full {
+  background: #ffebee;
+  color: #d32f2f;
+}
+
+/* Player Grid Layout für bessere Übersicht */
+.players-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 15px;
+  margin-top: 20px;
+}
+
+@media (max-width: 768px) {
+  .players-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Sync Indicator für Player Dashboard */
+.player-dashboard.synced {
+  position: relative;
+}
+
+.player-dashboard.synced::after {
+  content: "🔄";
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 12px;
+  opacity: 0.7;
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Readonly Input Styles */
+input[readonly] {
+  background-color: #f8f9fa !important;
+  cursor: not-allowed;
+}
+
+input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Treasure Category Disabled State */
+.treasure-category.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.treasure-category.disabled .treasure-category-header {
+  color: #999;
+}
+
+/* Player Name Highlight für eigenen Spieler */
+.player-dashboard.own .player-name {
+  background-color: #e8f5e9;
+  border-color: #4caf50;
+  font-weight: 600;
+}
+
+/* Loading State */
+.player-dashboard.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.player-dashboard.loading::before {
+  content: "Laden...";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 10px 20px;
+  border-radius: 5px;
+  z-index: 10;
+}
+
+/* Button States für Player Management */
+.menu-action-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.menu-action-button.player-full {
+  background-color: #ff9800;
+  position: relative;
+}
+
+.menu-action-button.player-full:hover::after {
+  content: "Nur als Zuschauer möglich";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 1000;
+}
+
+/* Responsive Improvements */
+@media (max-width: 480px) {
+  .player-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+  
+  .player-status {
+    margin-left: 0;
+    align-self: flex-start;
+  }
+  
+  .health-bar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .health-option {
+    margin: 2px 0;
+  }
+}
+
+/* Dark Mode Anpassungen */
+.dark .player-dashboard.own {
+  background-color: #1b5e20;
+  border-color: #4caf50;
+}
+
+.dark .player-dashboard.readonly {
+  background-color: #424242;
+}
+
+.dark .player-dashboard.inactive {
+  background-color: #3e2723;
+  border-color: #f44336;
+}
+
+.dark .max-players-warning {
+  background: #3e2723;
+  border-color: #ff9800;
+  color: #ffb74d;
+}
+
+.dark .player-status {
+  background: #1976d2;
+  color: #e3f2fd;
+}
+
+.dark .player-dashboard.own .player-status {
+  background: #388e3c;
+  color: #e8f5e9;
+}
+
+.dark .player-dashboard.inactive .player-status {
+  background: #d32f2f;
+  color: #ffebee;
+}
