@@ -1,13 +1,11 @@
-// sync-client.js - Netlify Functions Sync Client (für ddd-dice-sync.netlify.app)
+// sync-client.js - Erweitert um verbessertes Player Management
 class DDDSyncClient {
   constructor(serverUrl = null) {
     // Automatische Server-URL Erkennung für Netlify Functions
     if (!serverUrl) {
       if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        // Lokale Entwicklung mit Netlify Dev
         this.serverUrl = 'http://localhost:8888/.netlify/functions/sync';
       } else {
-        // Production auf Netlify - aktualisiert für Ihre neue URL
         this.serverUrl = `https://ddd-dice-sync.netlify.app/.netlify/functions/sync`;
       }
     } else {
@@ -18,6 +16,7 @@ class DDDSyncClient {
     this.currentRoomId = null;
     this.sessionId = null;
     this.participantCount = 0;
+    this.activePlayerCount = 0;
     this.pollInterval = null;
     this.pollDelay = 2000; // 2 Sekunden
     this.lastPollTimestamp = null;
@@ -27,6 +26,7 @@ class DDDSyncClient {
     this.onRoomUpdate = null;
     this.onDiceReceived = null;
     this.onTimerSync = null;
+    this.onPlayersReceived = null; // NEU für Spieler-Updates
     this.onError = null;
     
     console.log('DDD Netlify Sync Client initialized with URL:', this.serverUrl);
@@ -34,7 +34,6 @@ class DDDSyncClient {
   }
 
   init() {
-    // Starte sofort mit Verbindungstest
     this.testConnection();
   }
 
@@ -64,7 +63,6 @@ class DDDSyncClient {
       this.updateStatus('offline', 'Server nicht erreichbar');
       this.handleError('Server nicht verfügbar: ' + error.message);
       
-      // Retry nach 5 Sekunden
       setTimeout(() => {
         this.testConnection();
       }, 5000);
@@ -113,9 +111,11 @@ class DDDSyncClient {
         }, 'POST');
 
         if (response.success) {
-          // Aktualisiere Teilnehmerzahl
-          if (response.participantCount !== this.participantCount) {
+          // Aktualisiere Teilnehmerzahl und aktive Spieler
+          if (response.participantCount !== this.participantCount || 
+              response.activePlayerCount !== this.activePlayerCount) {
             this.participantCount = response.participantCount;
+            this.activePlayerCount = response.activePlayerCount;
             this.updateRoomInfo();
           }
 
@@ -124,7 +124,15 @@ class DDDSyncClient {
             this.handleMessage(message);
           });
 
+          // Spielerdaten verarbeiten (wenn vorhanden und verändert)
+          if (response.players && this.onPlayersReceived) {
+            this.onPlayersReceived(response.players);
+          }
+
           this.lastPollTimestamp = response.timestamp;
+          
+          // Bei erfolgreicher Antwort Polling-Delay zurücksetzen
+          this.pollDelay = 2000;
         }
       } catch (error) {
         console.error('Polling error:', error);
@@ -158,6 +166,13 @@ class DDDSyncClient {
         }
         break;
 
+      case 'players-update': // NEU
+        if (this.onPlayersReceived) {
+          this.onPlayersReceived(message.players);
+        }
+        this.showNotification('👥 Spielerdaten aktualisiert!');
+        break;
+
       default:
         console.log('Unknown message type:', message.type);
     }
@@ -176,6 +191,7 @@ class DDDSyncClient {
         this.currentRoomId = response.roomId;
         this.sessionId = response.sessionId;
         this.participantCount = response.participantCount;
+        this.activePlayerCount = response.activePlayerCount || 0;
         this.updateStatus('online', `Raum ${response.roomId} erstellt`);
         this.startPolling();
         return response;
@@ -202,6 +218,7 @@ class DDDSyncClient {
         this.currentRoomId = response.roomId;
         this.sessionId = response.sessionId;
         this.participantCount = response.participantCount;
+        this.activePlayerCount = response.activePlayerCount || 0;
         this.updateStatus('online', `Raum ${response.roomId} beigetreten`);
         
         // Synchronisiere aktuellen Zustand
@@ -214,6 +231,11 @@ class DDDSyncClient {
           setTimeout(() => {
             this.onTimerSync(response.timerState);
           }, 100);
+        }
+        if (response.players && this.onPlayersReceived) {
+          setTimeout(() => {
+            this.onPlayersReceived(response.players);
+          }, 200);
         }
         
         this.startPolling();
@@ -243,6 +265,7 @@ class DDDSyncClient {
     this.currentRoomId = null;
     this.sessionId = null;
     this.participantCount = 0;
+    this.activePlayerCount = 0;
     this.lastPollTimestamp = null;
     this.updateStatus('online', 'Bereit für Synchronisation');
   }
@@ -281,8 +304,36 @@ class DDDSyncClient {
     }
   }
 
+  // NEU: Spieler synchronisieren
+  async syncPlayers(playersData) {
+    if (!this.isConnected || !this.currentRoomId || !this.sessionId) {
+      return;
+    }
+
+    try {
+      console.log('Syncing players:', playersData);
+      const response = await this.makeRequest('/sync-players', {
+        roomId: this.currentRoomId,
+        sessionId: this.sessionId,
+        players: playersData
+      }, 'POST');
+      
+      if (response.success) {
+        this.participantCount = response.participantCount;
+        this.activePlayerCount = response.activePlayerCount;
+        this.updateRoomInfo();
+        
+        // Aktualisierte Spielerdaten weitergeben
+        if (response.players && this.onPlayersReceived) {
+          this.onPlayersReceived(response.players);
+        }
+      }
+    } catch (error) {
+      console.error('Sync players failed:', error);
+    }
+  }
+
   ping() {
-    // Für HTTP-basierte API weniger relevant, aber wir können einen Health Check machen
     return this.testConnection();
   }
 
@@ -298,7 +349,8 @@ class DDDSyncClient {
     if (this.onRoomUpdate) {
       this.onRoomUpdate({
         roomId: this.currentRoomId,
-        participantCount: this.participantCount
+        participantCount: this.participantCount,
+        activePlayerCount: this.activePlayerCount
       });
     }
   }
@@ -306,7 +358,6 @@ class DDDSyncClient {
   showNotification(message) {
     console.log('Notification:', message);
     
-    // Erstelle Benachrichtigung
     const notification = document.createElement('div');
     notification.className = 'sync-notification';
     notification.textContent = message;
@@ -327,7 +378,6 @@ class DDDSyncClient {
 
     document.body.appendChild(notification);
 
-    // Auto-remove nach 3 Sekunden
     setTimeout(() => {
       notification.style.animation = 'slideOutRight 0.3s ease';
       setTimeout(() => {
@@ -337,7 +387,6 @@ class DDDSyncClient {
       }, 300);
     }, 3000);
 
-    // CSS Animations hinzufügen falls nicht vorhanden
     this.addNotificationStyles();
   }
 
@@ -348,24 +397,12 @@ class DDDSyncClient {
     style.id = 'sync-notification-styles';
     style.textContent = `
       @keyframes slideInRight {
-        from {
-          transform: translateX(100%);
-          opacity: 0;
-        }
-        to {
-          transform: translateX(0);
-          opacity: 1;
-        }
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
       }
       @keyframes slideOutRight {
-        from {
-          transform: translateX(0);
-          opacity: 1;
-        }
-        to {
-          transform: translateX(100%);
-          opacity: 0;
-        }
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
       }
     `;
     document.head.appendChild(style);
@@ -378,16 +415,15 @@ class DDDSyncClient {
     }
   }
 
-  // Cleanup
   disconnect() {
     this.stopPolling();
     this.isConnected = false;
     this.currentRoomId = null;
     this.sessionId = null;
     this.participantCount = 0;
+    this.activePlayerCount = 0;
   }
 
-  // Debug-Informationen
   getDebugInfo() {
     return {
       serverUrl: this.serverUrl,
@@ -395,13 +431,14 @@ class DDDSyncClient {
       currentRoomId: this.currentRoomId,
       sessionId: this.sessionId,
       participantCount: this.participantCount,
+      activePlayerCount: this.activePlayerCount,
       pollDelay: this.pollDelay,
       isPolling: !!this.pollInterval
     };
   }
 }
 
-// QR Code Utilities (unverändert)
+// Utility classes bleiben unverändert
 class QRCodeGenerator {
   static generate(text, container, size = 200) {
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(text)}&bgcolor=ffffff&color=000000&qzone=2&format=png`;
@@ -419,7 +456,6 @@ class QRCodeGenerator {
   }
 }
 
-// URL Parameter Helper (unverändert)
 class URLHelper {
   static getParameter(name) {
     const urlParams = new URLSearchParams(window.location.search);
@@ -437,7 +473,6 @@ class URLHelper {
   }
 }
 
-// Clipboard Helper (unverändert)
 class ClipboardHelper {
   static async copy(text) {
     try {
@@ -446,7 +481,6 @@ class ClipboardHelper {
       return true;
     } catch (err) {
       console.warn('Clipboard API failed, trying fallback:', err);
-      // Fallback für ältere Browser
       const textArea = document.createElement('textarea');
       textArea.value = text;
       textArea.style.position = 'fixed';
@@ -480,4 +514,4 @@ if (typeof window !== 'undefined') {
   window.QRCodeGenerator = QRCodeGenerator;
   window.URLHelper = URLHelper;
   window.ClipboardHelper = ClipboardHelper;
-                     }
+        }
