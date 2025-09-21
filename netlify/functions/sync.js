@@ -1,14 +1,12 @@
-// netlify/functions/sync.js - Serverless WebSocket Alternative
+// netlify/functions/sync.js - Erweitert um Player Management
 const rooms = new Map();
 
-// CORS Headers
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Content-Type',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
 };
 
-// Room Management
 class Room {
   constructor(id) {
     this.id = id;
@@ -20,6 +18,7 @@ class Room {
       duration: 60,
       startTime: null
     };
+    this.players = new Map(); // sessionId -> player data
     this.messages = [];
     this.createdAt = new Date();
     this.lastActivity = new Date();
@@ -37,7 +36,36 @@ class Room {
 
   removeParticipant(sessionId) {
     this.participants.delete(sessionId);
+    this.players.delete(sessionId); // Spielerdaten auch entfernen
     this.lastActivity = new Date();
+  }
+
+  updatePlayerData(sessionId, playerData) {
+    // Limitiere auf maximal 4 aktive Spieler
+    const activePlayers = Array.from(this.players.values())
+      .filter(p => p.isActive).length;
+    
+    // Wenn mehr als 4 aktive Spieler und neuer Spieler aktiv sein will
+    if (activePlayers >= 4 && playerData.isActive && !this.players.has(sessionId)) {
+      playerData.isActive = false; // Zwinge zu inaktiv
+    }
+    
+    this.players.set(sessionId, {
+      ...playerData,
+      sessionId,
+      lastUpdated: new Date()
+    });
+    
+    this.lastActivity = new Date();
+  }
+
+  getPlayerData() {
+    return Array.from(this.players.values());
+  }
+
+  getActivePlayerCount() {
+    return Array.from(this.players.values())
+      .filter(p => p.isActive).length;
   }
 
   getParticipantCount() {
@@ -46,6 +74,7 @@ class Room {
     for (const [sessionId, participant] of this.participants) {
       if (participant.lastSeen < fiveMinutesAgo) {
         this.participants.delete(sessionId);
+        this.players.delete(sessionId); // Auch Spielerdaten entfernen
       }
     }
     return this.participants.size;
@@ -75,7 +104,7 @@ class Room {
   }
 
   getRecentMessages(since = null) {
-    if (!since) return this.messages.slice(-10); // Letzte 10 Nachrichten
+    if (!since) return this.messages.slice(-10);
     const sinceDate = new Date(since);
     return this.messages.filter(msg => new Date(msg.timestamp) > sinceDate);
   }
@@ -110,7 +139,6 @@ function cleanupRooms() {
 
 // Hauptfunktion
 exports.handler = async (event, context) => {
-  // CORS Preflight
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
@@ -119,8 +147,7 @@ exports.handler = async (event, context) => {
     };
   }
 
-  // Cleanup bei jeder Anfrage (einfacher Scheduler)
-  if (Math.random() < 0.1) { // 10% Chance
+  if (Math.random() < 0.1) {
     cleanupRooms();
   }
 
@@ -169,6 +196,7 @@ exports.handler = async (event, context) => {
           roomId,
           sessionId,
           participantCount: room.getParticipantCount(),
+          activePlayerCount: room.getActivePlayerCount(),
           joinUrl: `${event.headers.origin || 'https://ddd-dice-sync.netlify.app'}?room=${roomId}`
         })
       };
@@ -204,13 +232,61 @@ exports.handler = async (event, context) => {
           roomId,
           sessionId,
           participantCount: room.getParticipantCount(),
+          activePlayerCount: room.getActivePlayerCount(),
           currentDiceValues: room.currentDiceValues,
-          timerState: room.timerState
+          timerState: room.timerState,
+          players: room.getPlayerData()
         })
       };
     }
 
-    // Würfel synchronisieren
+    // Spieler synchronisieren - NEUE FUNKTION
+    if (path === '/sync-players' && method === 'POST') {
+      const { roomId, sessionId, players } = body;
+      const room = rooms.get(roomId);
+      
+      if (!room) {
+        return {
+          statusCode: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ success: false, error: 'Raum nicht gefunden' })
+        };
+      }
+
+      room.updateParticipant(sessionId);
+      
+      // Spielerdaten für diese Session aktualisieren
+      players.forEach(playerData => {
+        // Sicherheitscheck: Nur eigene Spieler dürfen synchronisiert werden
+        const playerWithSession = {
+          ...playerData,
+          sessionId: sessionId,
+          isActive: room.getActivePlayerCount() < 4 || 
+                   (room.players.has(sessionId) && room.players.get(sessionId).isActive)
+        };
+        
+        room.updatePlayerData(sessionId, playerWithSession);
+      });
+      
+      room.addMessage({
+        type: 'players-update',
+        players: room.getPlayerData(),
+        fromSession: sessionId
+      });
+
+      return {
+        statusCode: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          success: true,
+          participantCount: room.getParticipantCount(),
+          activePlayerCount: room.getActivePlayerCount(),
+          players: room.getPlayerData()
+        })
+      };
+    }
+
+    // Würfel synchronisieren (unverändert)
     if (path === '/sync-dice' && method === 'POST') {
       const { roomId, sessionId, diceValues } = body;
       const room = rooms.get(roomId);
@@ -242,7 +318,7 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Timer synchronisieren
+    // Timer synchronisieren (unverändert)
     if (path === '/sync-timer' && method === 'POST') {
       const { roomId, sessionId, timerState } = body;
       const room = rooms.get(roomId);
@@ -278,7 +354,7 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Nachrichten abrufen (Polling)
+    // Nachrichten abrufen (erweitert um Spielerdaten)
     if (path === '/poll' && method === 'POST') {
       const { roomId, sessionId, since } = body;
       const room = rooms.get(roomId);
@@ -304,20 +380,29 @@ exports.handler = async (event, context) => {
           success: true,
           messages: filteredMessages,
           participantCount: room.getParticipantCount(),
+          activePlayerCount: room.getActivePlayerCount(),
           currentDiceValues: room.currentDiceValues,
           timerState: room.timerState,
+          players: room.getPlayerData(), // Spielerdaten mitliefern
           timestamp: new Date().toISOString()
         })
       };
     }
 
-    // Raum verlassen
+    // Raum verlassen (erweitert)
     if (path === '/leave-room' && method === 'POST') {
       const { roomId, sessionId } = body;
       const room = rooms.get(roomId);
       
       if (room) {
         room.removeParticipant(sessionId);
+        
+        // Benachrichtigung über entfernte Spieler
+        room.addMessage({
+          type: 'players-update',
+          players: room.getPlayerData(),
+          fromSession: sessionId
+        });
         
         if (room.isEmpty()) {
           rooms.delete(roomId);
@@ -331,7 +416,7 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Raum-Info
+    // Raum-Info (erweitert)
     if (path.startsWith('/room/') && method === 'GET') {
       const roomId = path.replace('/room/', '');
       const room = rooms.get(roomId);
@@ -350,14 +435,15 @@ exports.handler = async (event, context) => {
         body: JSON.stringify({
           id: room.id,
           participantCount: room.getParticipantCount(),
+          activePlayerCount: room.getActivePlayerCount(),
           timerState: room.timerState,
+          players: room.getPlayerData(),
           createdAt: room.createdAt,
           lastActivity: room.lastActivity
         })
       };
     }
 
-    // 404 für unbekannte Endpunkte
     return {
       statusCode: 404,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
