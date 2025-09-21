@@ -2072,3 +2072,359 @@ input:disabled {
   background: #d32f2f;
   color: #ffebee;
 }
+/* Ergänzungen für styles.css - Player Management Styles */
+
+/* Player Dashboard Status Styles */
+.player-dashboard.own {
+  background-color: #e8f5e9;
+  border: 2px solid #4caf50;
+  position: relative;
+}
+
+.player-dashboard.readonly {
+  background-color: #f5f5f5;
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.player-dashboard.readonly * {
+  pointer-events: none;
+}
+
+.player-dashboard.inactive {
+  background-color: #ffebee;
+  border: 2px solid #f44336;
+  opacity: 0.7;
+}
+
+/* Player Status Indicator */
+.player-status {
+  font-size: 11px;
+  padding: 3px 8px;
+  background: #e3f2fd;
+  color: #1976d2;
+  border-radius: 12px;
+  margin-left: 10px;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.player-dashboard.own .player-status {
+  background: #e8f5e9;
+  color: #388e3c;
+  font-weight: 600;
+}
+
+.player-dashboard.inactive .player-status {
+  background: #ffebee;
+  color: #d32f2f;
+}
+
+/* Max Players Warning */
+.max-players-warning {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  color: #856404;
+  padding: 12px 15px;
+  margin: 15px 0;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Room Info erweitert */
+.room-details-compact .room-id-row {
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.room-details-compact .room-id-row:last-of-type {
+  margin-bottom: 12px;
+}
+
+/* Player Grid Layout */
+.players-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.players-container.hidden {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .players-container {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
+/* Player Name Highlight für eigenen Spieler */
+.player-dashboard.own .player-name {
+  background-color: #e8f5e9;
+  border: 1px solid #4caf50;
+  font-weight: 600;
+}
+
+/* Readonly Input Styles */
+.player-dashboard.readonly input,
+.player-dashboard.readonly button:not(.remove-player) {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+input[readonly] {
+  background-color: #f8f9fa !important;
+  cursor: not-allowed;
+  border-color: #dee2e6;
+}
+
+input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #e9ecef;
+}
+
+/* Treasure Category Disabled State */
+.treasure-category.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.treasure-category.disabled .treasure-category-header {
+  color: #999;
+}
+
+.treasure-category.disabled .treasure-checkboxes input {
+  opacity: 0.3;
+}
+
+/* Button States für Player Management */
+.menu-action-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #6c757d;
+}
+
+.menu-action-button[title*="Zuschauer"] {
+  background-color: #ff9800;
+  position: relative;
+}
+
+/* Sync Indicator für Player Dashboard */
+.player-dashboard.synced::before {
+  content: "🔄";
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 12px;
+  opacity: 0.7;
+  animation: spin 2s linear infinite;
+  z-index: 1;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Loading State */
+.player-dashboard.loading {
+  opacity: 0.6;
+  pointer-events: none;
+  position: relative;
+}
+
+.player-dashboard.loading::after {
+  content: "Synchronisiert...";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.95);
+  padding: 8px 16px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  z-index: 10;
+}
+
+/* Responsive Improvements */
+@media (max-width: 480px) {
+  .player-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .player-status {
+    margin-left: 0;
+    align-self: flex-start;
+    font-size: 10px;
+  }
+  
+  .health-bar {
+    flex-wrap: wrap;
+    gap: 3px;
+  }
+  
+  .health-option {
+    margin: 1px;
+  }
+  
+  .health-label {
+    font-size: 11px;
+    padding: 2px 4px;
+  }
+  
+  .treasure-category-header {
+    flex-wrap: wrap;
+    gap: 3px;
+  }
+  
+  .treasure-icon {
+    font-size: 14px;
+  }
+  
+  .treasure-label {
+    font-size: 12px;
+  }
+}
+
+/* Dark Mode Anpassungen */
+.dark .player-dashboard.own {
+  background-color: #1b5e20;
+  border-color: #4caf50;
+}
+
+.dark .player-dashboard.readonly {
+  background-color: #424242;
+}
+
+.dark .player-dashboard.inactive {
+  background-color: #3e2723;
+  border-color: #f44336;
+}
+
+.dark .max-players-warning {
+  background: #3e2723;
+  border-color: #ff9800;
+  color: #ffb74d;
+}
+
+.dark .player-status {
+  background: #1565c0;
+  color: #e3f2fd;
+}
+
+.dark .player-dashboard.own .player-status {
+  background: #2e7d32;
+  color: #e8f5e9;
+}
+
+.dark .player-dashboard.inactive .player-status {
+  background: #c62828;
+  color: #ffebee;
+}
+
+.dark input[readonly] {
+  background-color: #424242 !important;
+  color: #e0e0e0;
+  border-color: #616161;
+}
+
+.dark input:disabled {
+  background-color: #303030;
+  color: #757575;
+}
+
+.dark .treasure-category.disabled .treasure-category-header {
+  color: #666;
+}
+
+/* Additional Room Info Styles */
+.participant-count {
+  font-weight: 600;
+  color: #1976d2;
+  margin-left: 8px;
+}
+
+.dark .participant-count {
+  color: #42a5f5;
+}
+
+/* Player Dashboard Hover Effects (nur für eigene) */
+.player-dashboard.own:hover {
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
+  transform: translateY(-1px);
+  transition: all 0.2s ease;
+}
+
+.player-dashboard.readonly:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Active Player Counter Badge */
+#activePlayerCount {
+  background: #e3f2fd;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.dark #activePlayerCount {
+  background: #1565c0;
+  color: #e3f2fd;
+}
+
+/* Remove Player Button */
+.remove-player {
+  background: #f44336;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  margin-left: auto;
+}
+
+.remove-player:hover {
+  background: #d32f2f;
+  transform: scale(1.1);
+}
+
+/* Player Dashboard Animation auf Änderungen */
+.player-dashboard.updated {
+  animation: pulse 0.5s ease;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+/* Zusätzliche Mini-Dice Styles falls noch nicht vorhanden */
+.mini-dice.is-fifth {
+  border: 2px solid #333;
+  background: #222;
+  color: white;
+}
+
+.mini-dice.pasch {
+  border-color: #4caf50;
+  background: #e8f5e9;
+}
