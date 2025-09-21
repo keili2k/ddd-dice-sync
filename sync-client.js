@@ -514,4 +514,4 @@ if (typeof window !== 'undefined') {
   window.QRCodeGenerator = QRCodeGenerator;
   window.URLHelper = URLHelper;
   window.ClipboardHelper = ClipboardHelper;
-        }
+}
