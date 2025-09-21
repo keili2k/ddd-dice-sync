@@ -7,7 +7,7 @@
 </head>
 <body>
   <h1>🎲 Spielhilfe Dungeons, Dice & Danger</h1>
-
+  
   <div class="header-controls">
     <button id="menuButton" class="menu-button">☰</button>
   </div>
@@ -19,7 +19,7 @@
         <h3>⚙️ Einstellungen & Synchronisation</h3>
         <button id="closeMenu" class="close-button">✕</button>
       </div>
-
+      
       <!-- Hauptfunktionen -->
       <div class="menu-section">
         <h4>🎮 Spiel-Steuerung</h4>
@@ -154,9 +154,6 @@
           <span>Spieler-Dashboards anzeigen</span>
         </label>
       </div>
-      <div id="maxPlayersWarning" class="max-players-warning" style="display: none;">
-          ⚠️ Maximale Anzahl aktiver Spieler erreicht! Sie können nur lesen, aber nicht aktiv spielen.
-      </div>
 
       <!-- Synchronisation -->
       <div class="menu-section">
@@ -165,7 +162,7 @@
           <span class="status-indicator offline" id="statusIndicator"></span>
           <span id="statusText">Offline</span>
         </div>
-
+        
         <div class="sync-controls">
           <button id="createRoom" class="menu-action-button success">🏠 Raum erstellen</button>
           <div class="join-room-row">
@@ -173,25 +170,27 @@
             <button id="joinRoom" class="compact-button">🚪 Beitreten</button>
           </div>
         </div>
-
+        
         <div class="room-info" id="roomInfo" style="display: none;">
           <div class="room-details-compact">
             <div class="room-id-row">
-              <strong>Raum:</strong>
+              <strong>Raum:</strong> 
               <span id="currentRoomId">-</span>
               <button id="copyRoomId" class="mini-button">📋</button>
               <span class="participant-count">👥 <span id="participantCount">0</span></span>
             </div>
+            <div class="room-id-row">
+              <strong>Aktive Spieler:</strong> <span id="activePlayerCount">0</span>/4
+            </div>
             <button id="leaveRoom" class="menu-action-button danger small">🚪 Raum verlassen</button>
           </div>
         </div>
-
+        
         <div class="qr-section" id="qrSection" style="display: none;">
           <div id="qrCode" class="qr-code-compact"></div>
           <p class="qr-info-compact">QR-Code zum Teilen</p>
         </div>
       </div>
-
 
       <!-- Debug Info (nur in Development) -->
       <div class="menu-section debug-section" id="debugSection" style="display: none;">
@@ -199,6 +198,11 @@
         <button id="debugInfo" class="menu-action-button secondary small">Debug-Info anzeigen</button>
       </div>
     </div>
+  </div>
+  
+  <!-- Max Players Warning -->
+  <div id="maxPlayersWarning" class="max-players-warning" style="display: none;">
+    ⚠️ Maximale Anzahl aktiver Spieler erreicht! Sie können nur lesen, aber nicht aktiv spielen.
   </div>
 
   <!-- Timer Display (nur wenn Timer aktiviert) -->
@@ -211,7 +215,7 @@
   <div class="players-container" id="playersContainer">
     <!-- Spieler werden dynamisch hinzugefügt -->
   </div>
-
+  
   <div class="dice-row auto-mode" id="diceRow" onclick="handleDiceClick()">
     <div class="scene"><div class="dice" id="d1"></div></div>
     <div class="scene"><div class="dice" id="d2"></div></div>
@@ -223,9 +227,9 @@
   <div class="dice-mode-info" id="diceModeInfo">
     Klicken Sie auf die Würfel oder den Würfeln-Button zum automatischen Würfeln
   </div>
-
+  
   <div id="values" style="display:none;"></div>
-
+  
   <div id="result">
     <div id="stats"></div>
     <div id="list1"></div>
@@ -240,11 +244,16 @@
     let allPossibleSplits4 = [];
     let allPossibleSplits5 = [];
 
+    // Spieler-Management mit verbesserter Synchronisation
+    let players = [];
+    let nextPlayerId = 1;
+    const MAX_ACTIVE_PLAYERS = 4;
+
     // Berechne alle möglichen Kombinationen für Wahrscheinlichkeiten
     function calculateAllPossibleSplits() {
       allPossibleSplits4 = [];
       allPossibleSplits5 = [];
-
+      
       // Alle Kombinationen für 4 Würfel
       for (let a = 1; a <= 6; a++) {
         for (let b = 1; b <= 6; b++) {
@@ -256,7 +265,7 @@
           }
         }
       }
-
+      
       // Alle Kombinationen für 5 Würfel (nur die zusätzlichen durch Würfel 5)
       for (let a = 1; a <= 6; a++) {
         for (let b = 1; b <= 6; b++) {
@@ -268,12 +277,12 @@
                 const splits4 = getSplits(arr4);
                 const set4 = new Set(splits4.map(s => s.key));
                 const splits5all = getSplits(arr5);
-
+                
                 const splits5unique = splits5all.filter(s => {
                   const uses5 = s.idx.pair1.includes(4) || s.idx.pair2.includes(4);
                   return uses5 && !set4.has(s.key);
                 });
-
+                
                 allPossibleSplits5.push(...splits5unique.map(s => s.key));
               }
             }
@@ -304,7 +313,7 @@
       const total = allSplits.length;
       const fraction = simplifyFraction(count, total);
       const percentage = ((count / total) * 100).toFixed(1);
-
+      
       return {
         fraction: fraction,
         percentage: percentage,
@@ -480,23 +489,24 @@
         console.warn('sync-client.js nicht gefunden - lokaler Modus');
         return;
       }
-
+      
       // Für Netlify Functions wird keine Server URL benötigt
       // Der Client erkennt automatisch die richtige URL
       syncClient = new DDDSyncClient();
-
+      
       // Event Callbacks setzen
       syncClient.onStatusChange = updateSyncStatus;
       syncClient.onRoomUpdate = updateRoomInfo;
       syncClient.onDiceReceived = receiveSyncedRoll;
       syncClient.onTimerSync = receiveSyncedTimer;
+      syncClient.onPlayersReceived = receivePlayerData; // NEU!
       syncClient.onError = handleSyncError;
     }
 
     function updateSyncStatus(status, text) {
       const indicator = document.getElementById('statusIndicator');
       const statusText = document.getElementById('statusText');
-
+      
       if (indicator && statusText) {
         indicator.className = `status-indicator ${status}`;
         statusText.textContent = text;
@@ -507,12 +517,48 @@
       if (roomData.roomId) {
         document.getElementById('currentRoomId').textContent = roomData.roomId;
         document.getElementById('participantCount').textContent = roomData.participantCount || 0;
+        
+        // NEU: Aktive Spieler anzeigen
+        if (roomData.activePlayerCount !== undefined) {
+          document.getElementById('activePlayerCount').textContent = roomData.activePlayerCount;
+          updateMaxPlayersWarning(roomData.activePlayerCount);
+        }
+        
         document.getElementById('roomInfo').style.display = 'block';
-        document.getElementById('leaveRoom').style.display = 'inline-block';
-        updatePlayerStatus();
+        addSyncIndicator();
+        showQRCode(roomData.roomId);
+        
+        // Automatisch eigenen Spieler erstellen wenn noch keiner vorhanden und Platz frei
+        if (!players.find(p => p.isOwn) && (roomData.activePlayerCount || 0) < MAX_ACTIVE_PLAYERS) {
+          setTimeout(() => {
+            addOwnPlayer();
+          }, 500);
+        }
       } else {
         document.getElementById('roomInfo').style.display = 'none';
-        document.getElementById('leaveRoom').style.display = 'none';
+        document.getElementById('qrSection').style.display = 'none';
+        removeSyncIndicator();
+        
+        // Entferne alle synchronisierten Spieler
+        clearSyncedPlayers();
+      }
+    }
+
+    // NEU: Maximum Spieler Warnung
+    function updateMaxPlayersWarning(activeCount) {
+      const warningElement = document.getElementById('maxPlayersWarning');
+      const ownPlayer = players.find(p => p.isOwn);
+      const showWarning = activeCount >= MAX_ACTIVE_PLAYERS && (!ownPlayer || !ownPlayer.isActive);
+      warningElement.style.display = showWarning ? 'block' : 'none';
+      
+      // Add Player Button Text anpassen
+      const addButton = document.getElementById('addPlayer');
+      if (activeCount >= MAX_ACTIVE_PLAYERS) {
+        addButton.textContent = '➕ Spieler hinzufügen (nur lesend)';
+        addButton.title = 'Maximale Anzahl aktiver Spieler erreicht - nur als Zuschauer';
+      } else {
+        addButton.textContent = '➕ Spieler hinzufügen';
+        addButton.title = '';
       }
     }
 
@@ -523,19 +569,19 @@
 
     function receiveSyncedTimer(timerState) {
       console.log('Received synced timer:', timerState);
-
+      
       if (timerState.isRunning && !isTimerRunning) {
         // Starte Timer synchronisiert
         remainingTime = timerState.remainingTime;
         isTimerRunning = true;
         document.getElementById('startTimer').disabled = true;
         document.getElementById('stopTimer').disabled = false;
-
+        
         if (countdownTimer) clearInterval(countdownTimer);
         countdownTimer = setInterval(() => {
           remainingTime--;
           updateCountdownDisplay();
-
+          
           if (remainingTime <= 0) {
             clearInterval(countdownTimer);
             isTimerRunning = false;
@@ -543,7 +589,7 @@
             document.getElementById('stopTimer').disabled = true;
           }
         }, 1000);
-
+        
       } else if (!timerState.isRunning && isTimerRunning) {
         // Stoppe Timer synchronisiert
         stopTimer();
@@ -561,7 +607,7 @@
         setTimeout(createRoom, 2000);
         return;
       }
-
+      
       syncClient.createRoom().then(response => {
         console.log('Room created:', response);
       }).catch(error => {
@@ -575,13 +621,13 @@
         alert('Bitte geben Sie eine gültige 6-stellige Raum-ID ein.');
         return;
       }
-
+      
       if (!syncClient) {
         initSyncClient();
         setTimeout(() => joinRoom(), 2000);
         return;
       }
-
+      
       syncClient.joinRoom(roomId).then(response => {
         console.log('Joined room:', response);
         document.getElementById('roomIdInput').value = '';
@@ -602,7 +648,7 @@
     function showQRCode(roomId) {
       const qrSection = document.getElementById('qrSection');
       const qrContainer = document.getElementById('qrCode');
-
+      
       if (typeof QRCodeGenerator !== 'undefined') {
         const joinUrl = QRCodeGenerator.generateJoinURL(roomId);
         QRCodeGenerator.generate(joinUrl, qrContainer);
@@ -616,7 +662,7 @@
 
     function copyRoomId() {
       const roomId = document.getElementById('currentRoomId').textContent;
-
+      
       if (typeof ClipboardHelper !== 'undefined') {
         ClipboardHelper.copy(roomId).then(success => {
           const btn = document.getElementById('copyRoomId');
@@ -658,9 +704,9 @@
     function updateCountdownDisplay() {
       const display = document.getElementById('countdownDisplay');
       const status = document.getElementById('timerStatus');
-
+      
       display.textContent = formatTime(remainingTime);
-
+      
       // Farbwechsel je nach verbleibender Zeit
       display.className = 'countdown-display';
       if (remainingTime <= 10 && remainingTime > 0) {
@@ -668,33 +714,33 @@
       } else if (remainingTime <= 30 && remainingTime > 0) {
         display.className += ' warning';
       }
-
+      
       if (remainingTime <= 0) {
         display.textContent = '00:00';
         status.textContent = '⏰ Zeit abgelaufen!';
         status.className = 'timer-status finished';
-
+        
         // Timer beenden
         clearInterval(countdownTimer);
         isTimerRunning = false;
         document.getElementById('startTimer').disabled = false;
         document.getElementById('stopTimer').disabled = true;
-
+        
         // Akustisches Signal (falls Browser es unterstützt)
         try {
           const audio = new AudioContext();
           const oscillator = audio.createOscillator();
           const gainNode = audio.createGain();
-
+          
           oscillator.connect(gainNode);
           gainNode.connect(audio.destination);
-
+          
           oscillator.frequency.value = 800;
           oscillator.type = 'sine';
-
+          
           gainNode.gain.setValueAtTime(0.3, audio.currentTime);
           gainNode.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + 1);
-
+          
           oscillator.start(audio.currentTime);
           oscillator.stop(audio.currentTime + 1);
         } catch(e) {
@@ -708,7 +754,7 @@
       const selectedTime = parseInt(document.getElementById('timerSelect').value);
       remainingTime = selectedTime;
       isTimerRunning = true;
-
+      
       // Synchronisiere Timer falls verbunden
       if (syncClient && syncClient.currentRoomId) {
         syncClient.syncTimer({
@@ -718,18 +764,18 @@
           startTime: Date.now()
         });
       }
-
+      
       document.getElementById('startTimer').disabled = true;
       document.getElementById('stopTimer').disabled = false;
       document.getElementById('timerStatus').textContent = '⏳ Timer gestartet!';
       document.getElementById('timerStatus').className = 'timer-status running';
-
+      
       updateCountdownDisplay();
-
+      
       countdownTimer = setInterval(() => {
         remainingTime--;
         updateCountdownDisplay();
-
+        
         if (remainingTime <= 0) {
           clearInterval(countdownTimer);
         }
@@ -740,7 +786,7 @@
       clearInterval(countdownTimer);
       isTimerRunning = false;
       remainingTime = 0;
-
+      
       // Synchronisiere Timer-Stop falls verbunden
       if (syncClient && syncClient.currentRoomId) {
         syncClient.syncTimer({
@@ -750,7 +796,7 @@
           startTime: null
         });
       }
-
+      
       document.getElementById('startTimer').disabled = false;
       document.getElementById('stopTimer').disabled = true;
       document.getElementById('countdownDisplay').textContent = '--:--';
@@ -762,7 +808,7 @@
     function displayRoll(values) {
       lastValues = values;
       ['d1','d2','d3','d4','dice5'].forEach((id, idx) => animateDiceToValue(id, values[idx]));
-
+      
       document.getElementById("values").textContent = "Ergebnisse: " + values.join(", ");
       document.getElementById("values").style.display = "none";
 
@@ -781,7 +827,7 @@
       if (document.getElementById('toggleStats').checked) {
         const totalCombinations4 = 6 ** 4;
         const totalCombinations5 = 6 ** 5;
-
+        
         document.getElementById("stats").innerHTML = `
           <div class="stats-panel compact">
             <h3>📊 Statistiken</h3>
@@ -810,41 +856,17 @@
       }
 
       document.getElementById("list1").innerHTML =
-        '<div class="section-title">🎯 Liste 1 (nur Würfel 1–4)</div>' +
+        '<div class="section-title">🎯 Liste 1 (nur Würfel 1–4)</div>' + 
         formatSplitsWithProbability(splits4, allPossibleSplits4);
 
       updateFifthDisplay();
       updateTimerDisplay();
     }
 
-    // Spieler-Management mit verbesserter Synchronisation
-    let players = [];
-    let nextPlayerId = 1;
-    const MAX_ACTIVE_PLAYERS = 4;
-
-    function updatePlayerStatus() {
-      const activePlayerCount = players.filter(p => p.isActive).length;
-      document.getElementById('activePlayerCount').textContent = activePlayerCount;
-
-      // Warnung anzeigen wenn max. Spieler erreicht und aktueller Benutzer nicht aktiv
-      const ownPlayer = players.find(p => p.isOwn);
-      const showWarning = activePlayerCount >= MAX_ACTIVE_PLAYERS && (!ownPlayer || !ownPlayer.isActive);
-      document.getElementById('maxPlayersWarning').style.display = showWarning ? 'block' : 'none';
-
-      // Add/Remove Button Status aktualisieren
-      const addButton = document.getElementById('addPlayer');
-      if (activePlayerCount >= MAX_ACTIVE_PLAYERS) {
-        addButton.textContent = '➕ Spieler hinzufügen (nur lesend)';
-        addButton.title = 'Maximale Anzahl aktiver Spieler erreicht - nur als Zuschauer';
-      } else {
-        addButton.textContent = '➕ Spieler hinzufügen';
-        addButton.title = '';
-      }
-    }
-
+    // Player Dashboard Erstellung erweitern
     function createPlayerDashboard(playerId, playerName = '', sessionId = null, isActive = true) {
       const isOwn = sessionId === syncClient.sessionId;
-
+      
       const player = {
         id: playerId,
         name: playerName || `Spieler ${playerId}`,
@@ -864,42 +886,42 @@
         isOwn: isOwn,
         isActive: isActive
       };
-
+      
       const dashboard = document.createElement('div');
       dashboard.className = `player-dashboard ${isOwn ? 'own' : (isActive ? '' : 'inactive')} ${!isOwn ? 'readonly' : ''}`;
       dashboard.id = `player-${playerId}`;
-
-      const statusText = isOwn ? '(Ihr Spieler)' :
+      
+      const statusText = isOwn ? '(Ihr Spieler)' : 
                         isActive ? '(Aktiver Spieler)' : '(Inaktiv - Nur lesend)';
-
+      
       dashboard.innerHTML = `
         <div class="player-header">
-          <input type="text" class="player-name" value="${player.name}"
-                 onchange="updatePlayerName(${playerId}, this.value)"
+          <input type="text" class="player-name" value="${player.name}" 
+                 onchange="updatePlayerName(${playerId}, this.value)" 
                  placeholder="Spieler Name" ${!isOwn ? 'readonly' : ''}>
           <span class="player-status">${statusText}</span>
           ${isOwn ? `<button class="remove-player" onclick="removePlayer(${playerId})" title="Spieler entfernen">×</button>` : ''}
         </div>
-
+        
         <div class="health-section">
           <div class="section-title-small">❤️ Lebenspunkte</div>
           <div class="health-bar">
             ${[0, 0, 1, 2, 4, 6, 9, 12, 16, 20].map(value => `
               <div class="health-option">
-                <input type="radio" id="health-${playerId}-${value}" name="health-${playerId}"
+                <input type="radio" id="health-${playerId}-${value}" name="health-${playerId}" 
                        value="${value}" class="health-radio" ${value === 20 ? 'checked' : ''} ${!isOwn ? 'disabled' : ''}
                        onchange="updatePlayerHealth(${playerId}, ${value})">
                 <label for="health-${playerId}-${value}" class="health-label">${value}</label>
               </div>
             `).join('')}
             <div class="health-option">
-              <input type="radio" id="health-${playerId}-dead" name="health-${playerId}"
+              <input type="radio" id="health-${playerId}-dead" name="health-${playerId}" 
                      value="dead" class="health-radio" ${!isOwn ? 'disabled' : ''} onchange="updatePlayerHealth(${playerId}, 'dead')">
               <label for="health-${playerId}-dead" class="health-label dead">💀 TOT</label>
             </div>
           </div>
         </div>
-
+        
         <div class="black-dice-section">
           <div class="section-title-small">🎲 Schwarze Würfel</div>
           <div class="black-dice-grid">
@@ -912,7 +934,7 @@
             `).join('')}
           </div>
         </div>
-
+        
         <div class="treasure-section">
           <div class="treasure-category" id="treasure-heart-${playerId}">
             <div class="treasure-category-header">
@@ -923,13 +945,13 @@
             </div>
             <div class="treasure-checkboxes">
               ${[0, 1, 2].map(index => `
-                <input type="checkbox" class="treasure-checkbox heart"
+                <input type="checkbox" class="treasure-checkbox heart" 
                        id="heart-${playerId}-${index}" disabled
                        onchange="updateTreasure(${playerId}, 'heart', ${index}, this.checked)">
               `).join('')}
             </div>
           </div>
-
+          
           <div class="treasure-category" id="treasure-torch-${playerId}">
             <div class="treasure-category-header">
               <input type="checkbox" class="treasure-category-checkbox" id="category-torch-${playerId}" ${!isOwn ? 'disabled' : ''}
@@ -939,13 +961,13 @@
             </div>
             <div class="treasure-checkboxes">
               ${[0, 1].map(index => `
-                <input type="checkbox" class="treasure-checkbox torch"
+                <input type="checkbox" class="treasure-checkbox torch" 
                        id="torch-${playerId}-${index}" disabled
                        onchange="updateTreasure(${playerId}, 'torch', ${index}, this.checked)">
               `).join('')}
             </div>
           </div>
-
+          
           <div class="treasure-category" id="treasure-dice-${playerId}">
             <div class="treasure-category-header">
               <input type="checkbox" class="treasure-category-checkbox" id="category-dice-${playerId}" ${!isOwn ? 'disabled' : ''}
@@ -955,7 +977,7 @@
             </div>
             <div class="treasure-checkboxes">
               ${[0, 1, 2].map(index => `
-                <input type="checkbox" class="treasure-checkbox dice"
+                <input type="checkbox" class="treasure-checkbox dice" 
                        id="dice-${playerId}-${index}" disabled
                        onchange="updateTreasure(${playerId}, 'dice', ${index}, this.checked)">
               `).join('')}
@@ -963,46 +985,40 @@
           </div>
         </div>
       `;
-
+      
       players.push(player);
       return dashboard;
     }
 
+    // NEU: Eigenen Spieler hinzufügen
     function addOwnPlayer() {
       // Prüfe ob bereits ein eigener Spieler existiert
       if (players.find(p => p.isOwn)) {
         console.log('Own player already exists');
         return;
       }
-
+      
       const activePlayerCount = players.filter(p => p.isActive).length;
       const canBeActive = activePlayerCount < MAX_ACTIVE_PLAYERS;
-
+      
       const playersContainer = document.getElementById('playersContainer');
       const dashboard = createPlayerDashboard(nextPlayerId, `Mein Spieler`, syncClient.sessionId, canBeActive);
       playersContainer.appendChild(dashboard);
       nextPlayerId++;
-
-      updatePlayerStatus();
+      
       syncPlayerData();
     }
 
     function addPlayer() {
-      if (!syncClient.currentRoomId) {
-        alert('Nicht mit einem Raum verbunden!');
-        return;
-      }
-
-      const activePlayerCount = players.filter(p => p.isActive).length;
-      const canBeActive = activePlayerCount < MAX_ACTIVE_PLAYERS;
-
       const playersContainer = document.getElementById('playersContainer');
-      const dashboard = createPlayerDashboard(nextPlayerId, `Spieler ${nextPlayerId}`, syncClient.sessionId, canBeActive);
+      const dashboard = createPlayerDashboard(nextPlayerId);
       playersContainer.appendChild(dashboard);
       nextPlayerId++;
-
-      updatePlayerStatus();
-      syncPlayerData();
+      
+      // Synchronisiere neue Spieler falls verbunden
+      if (syncClient && syncClient.currentRoomId) {
+        syncPlayerData();
+      }
     }
 
     function removePlayer(playerId) {
@@ -1011,22 +1027,27 @@
         alert('Sie können nur Ihre eigenen Spieler entfernen!');
         return;
       }
-
+      
       const dashboard = document.getElementById(`player-${playerId}`);
       if (dashboard) {
         dashboard.remove();
       }
-
+      
       players = players.filter(p => p.id !== playerId);
-      updatePlayerStatus();
-      syncPlayerData();
+      
+      // Synchronisiere entfernte Spieler falls verbunden
+      if (syncClient && syncClient.currentRoomId) {
+        syncPlayerData();
+      }
     }
 
     function updatePlayerName(playerId, newName) {
       const player = players.find(p => p.id === playerId);
       if (player && player.isOwn) {
         player.name = newName;
-        syncPlayerData();
+        if (syncClient && syncClient.currentRoomId) {
+          syncPlayerData();
+        }
       }
     }
 
@@ -1034,7 +1055,9 @@
       const player = players.find(p => p.id === playerId);
       if (player && player.isOwn) {
         player.health = health;
-        syncPlayerData();
+        if (syncClient && syncClient.currentRoomId) {
+          syncPlayerData();
+        }
       }
     }
 
@@ -1042,7 +1065,9 @@
       const player = players.find(p => p.id === playerId);
       if (player && player.isOwn) {
         player.blackDice[index] = checked;
-        syncPlayerData();
+        if (syncClient && syncClient.currentRoomId) {
+          syncPlayerData();
+        }
       }
     }
 
@@ -1051,8 +1076,10 @@
       if (!player || !player.isOwn) return;
 
       if (checked) {
+        // Prüfen ob bereits 2 Kategorien gewählt sind
         const selectedCount = Object.values(player.treasureCategories).filter(Boolean).length;
         if (selectedCount >= 2) {
+          // Checkbox zurücksetzen
           document.getElementById(`category-${type}-${playerId}`).checked = false;
           alert('Maximal 2 von 3 Schatztruhen-Kategorien können gewählt werden!');
           return;
@@ -1060,7 +1087,8 @@
       }
 
       player.treasureCategories[type] = checked;
-
+      
+      // Aktiviere/deaktiviere die individuellen Checkboxen
       const maxItems = type === 'torch' ? 1 : 2;
       for (let i = 0; i <= maxItems; i++) {
         const checkbox = document.getElementById(`${type}-${playerId}-${i}`);
@@ -1073,6 +1101,7 @@
         }
       }
 
+      // Visuelles Feedback für Kategorie
       const categoryDiv = document.getElementById(`treasure-${type}-${playerId}`);
       if (checked) {
         categoryDiv.classList.remove('disabled');
@@ -1080,8 +1109,12 @@
         categoryDiv.classList.add('disabled');
       }
 
+      // Andere Kategorien prüfen und ggf. sperren
       updateTreasureCategoryStates(playerId);
-      syncPlayerData();
+
+      if (syncClient && syncClient.currentRoomId) {
+        syncPlayerData();
+      }
     }
 
     function updateTreasureCategoryStates(playerId) {
@@ -1089,15 +1122,17 @@
       if (!player) return;
 
       const selectedCount = Object.values(player.treasureCategories).filter(Boolean).length;
-
+      
       ['heart', 'torch', 'dice'].forEach(type => {
         const categoryCheckbox = document.getElementById(`category-${type}-${playerId}`);
         const categoryDiv = document.getElementById(`treasure-${type}-${playerId}`);
-
+        
         if (!player.treasureCategories[type] && selectedCount >= 2) {
+          // Kategorie sperren
           categoryCheckbox.disabled = true;
           categoryDiv.classList.add('disabled');
         } else if (!player.treasureCategories[type]) {
+          // Kategorie entsperren
           categoryCheckbox.disabled = false;
           categoryDiv.classList.remove('disabled');
         }
@@ -1108,133 +1143,42 @@
       const player = players.find(p => p.id === playerId);
       if (player && player.isOwn && player.treasureCategories[type]) {
         player.treasure[type][index] = checked;
-        syncPlayerData();
+        if (syncClient && syncClient.currentRoomId) {
+          syncPlayerData();
+        }
       }
     }
 
     function resetAllPlayers() {
-      if (!confirm('Alle Spielerdaten zurücksetzen?')) return;
-
-      // Nur eigene Spieler zurücksetzen
-      players.filter(p => p.isOwn).forEach(player => {
-        resetPlayerData(player);
-        updatePlayerDashboardUI(player);
-      });
-
-      syncPlayerData();
-    }
-
-    function resetPlayerData(player) {
-      player.health = 20;
-      player.blackDice = [false, false, false];
-      player.treasure = {
-        heart: [false, false, false],
-        torch: [false, false],
-        dice: [false, false, false]
-      };
-      player.treasureCategories = {
-        heart: false,
-        torch: false,
-        dice: false
-      };
-    }
-
-    function updatePlayerDashboardUI(player) {
-      // Health zurücksetzen
-      document.getElementById(`health-${player.id}-20`).checked = true;
-
-      // Schwarze Würfel zurücksetzen
-      [0, 1, 2].forEach(index => {
-        document.getElementById(`blackdie-${player.id}-${index}`).checked = false;
-      });
-
-      // Schatztruhen-Kategorien zurücksetzen
-      ['heart', 'torch', 'dice'].forEach(type => {
-        const categoryCheckbox = document.getElementById(`category-${type}-${player.id}`);
-        const categoryDiv = document.getElementById(`treasure-${type}-${player.id}`);
-
-        categoryCheckbox.checked = false;
-        categoryDiv.classList.add('disabled');
-
-        const maxIndex = type === 'torch' ? 1 : 2;
-        for (let i = 0; i <= maxIndex; i++) {
-          const checkbox = document.getElementById(`${type}-${player.id}-${i}`);
-          checkbox.checked = false;
-          checkbox.disabled = true;
+      if (confirm('Alle Spielerdaten zurücksetzen?')) {
+        // Nur eigene Spieler zurücksetzen
+        players.filter(p => p.isOwn).forEach(player => {
+          player.health = 20;
+          player.blackDice = [false, false, false];
+          player.treasure = {
+            heart: [false, false, false],
+            torch: [false, false],
+            dice: [false, false, false]
+          };
+          player.treasureCategories = {
+            heart: false,
+            torch: false,
+            dice: false
+          };
+          
+          updatePlayerDashboardUI(player);
+        });
+        
+        if (syncClient && syncClient.currentRoomId) {
+          syncPlayerData();
         }
-      });
-    }
-
-    function syncPlayerData() {
-      if (syncClient && syncClient.currentRoomId) {
-        const ownPlayers = players.filter(p => p.isOwn);
-        syncClient.syncPlayers(ownPlayers);
       }
-    }
-
-    function receivePlayerData(playersData) {
-      console.log('Received player data:', playersData);
-
-      playersData.forEach(syncedPlayer => {
-        let localPlayer = players.find(p => p.sessionId === syncedPlayer.sessionId);
-
-        if (!localPlayer) {
-          // Neuer Spieler von anderem Client
-          const activeCount = players.filter(p => p.isActive).length;
-          const canBeActive = activeCount < MAX_ACTIVE_PLAYERS;
-
-          const playerId = nextPlayerId++;
-          const dashboard = createPlayerDashboard(playerId, syncedPlayer.name, syncedPlayer.sessionId, canBeActive);
-          const playersContainer = document.getElementById('playersContainer');
-          playersContainer.appendChild(dashboard);
-
-          localPlayer = players[players.length - 1]; // Letzter hinzugefügter
-        }
-
-        // Daten aktualisieren (nur wenn es nicht der eigene ist)
-        if (localPlayer.sessionId !== syncClient.sessionId) {
-          Object.assign(localPlayer, syncedPlayer, {
-            id: localPlayer.id,
-            isOwn: false,
-            isActive: localPlayer.isActive
-          });
-          updatePlayerDashboardUI(localPlayer);
-        }
-      });
-
-      updatePlayerStatus();
-    }
-
-    function clearAllPlayers() {
-      players = [];
-      document.getElementById('playersContainer').innerHTML = '';
-      nextPlayerId = 1;
-      updatePlayerStatus();
-    }
-
-    function simulateExistingPlayers() {
-      // Simuliere 1-2 bestehende Spieler im Raum
-      const existingCount = Math.floor(Math.random() * 2) + 1;
-
-      for (let i = 0; i < existingCount; i++) {
-        const playersContainer = document.getElementById('playersContainer');
-        const dashboard = createPlayerDashboard(
-          nextPlayerId,
-          `Spieler ${nextPlayerId}`,
-          `session_other_${i}`,
-          true
-        );
-        playersContainer.appendChild(dashboard);
-        nextPlayerId++;
-      }
-
-      updatePlayerStatus();
     }
 
     function updatePlayersDisplay() {
       const showPlayers = document.getElementById('togglePlayers').checked;
       const playersContainer = document.getElementById('playersContainer');
-
+      
       if (showPlayers) {
         playersContainer.classList.remove('hidden');
       } else {
@@ -1244,17 +1188,114 @@
 
     function syncPlayerData() {
       if (syncClient && syncClient.currentRoomId) {
-        syncClient.syncPlayers(players);
+        const ownPlayers = players.filter(p => p.isOwn);
+        syncClient.syncPlayers(ownPlayers);
       }
     }
 
+    // NEU: Empfangene Spielerdaten verarbeiten
+    function receivePlayerData(playersData) {
+      console.log('Received player data:', playersData);
+      
+      playersData.forEach(syncedPlayer => {
+        let localPlayer = players.find(p => p.sessionId === syncedPlayer.sessionId);
+        
+        if (!localPlayer && syncedPlayer.sessionId !== syncClient.sessionId) {
+          // Neuer Spieler von anderem Client
+          const playerId = nextPlayerId++;
+          const dashboard = createPlayerDashboard(
+            playerId, 
+            syncedPlayer.name, 
+            syncedPlayer.sessionId, 
+            syncedPlayer.isActive
+          );
+          const playersContainer = document.getElementById('playersContainer');
+          playersContainer.appendChild(dashboard);
+          
+          localPlayer = players[players.length - 1];
+        }
+        
+        // Daten aktualisieren (nur wenn es nicht der eigene ist)
+        if (localPlayer && localPlayer.sessionId !== syncClient.sessionId) {
+          Object.assign(localPlayer, syncedPlayer, { 
+            id: localPlayer.id, 
+            isOwn: false
+          });
+          updatePlayerDashboardUI(localPlayer);
+        }
+      });
+      
+      // Entferne Spieler die nicht mehr da sind
+      const currentSessionIds = playersData.map(p => p.sessionId);
+      currentSessionIds.push(syncClient.sessionId); // Eigene Session behalten
+      
+      const playersToRemove = players.filter(p => !currentSessionIds.includes(p.sessionId));
+      
+      playersToRemove.forEach(player => {
+        const dashboard = document.getElementById(`player-${player.id}`);
+        if (dashboard) {
+          dashboard.remove();
+        }
+      });
+      
+      players = players.filter(p => currentSessionIds.includes(p.sessionId));
+    }
 
+    // NEU: Player Dashboard UI aktualisieren
+    function updatePlayerDashboardUI(player) {
+      // Health aktualisieren
+      if (player.health === 'dead') {
+        document.getElementById(`health-${player.id}-dead`).checked = true;
+      } else {
+        document.getElementById(`health-${player.id}-${player.health}`).checked = true;
+      }
+      
+      // Schwarze Würfel aktualisieren
+      player.blackDice.forEach((checked, index) => {
+        document.getElementById(`blackdie-${player.id}-${index}`).checked = checked;
+      });
+      
+      // Schatztruhen-Kategorien aktualisieren
+      Object.entries(player.treasureCategories).forEach(([type, checked]) => {
+        document.getElementById(`category-${type}-${player.id}`).checked = checked;
+        
+        const categoryDiv = document.getElementById(`treasure-${type}-${player.id}`);
+        if (checked) {
+          categoryDiv.classList.remove('disabled');
+          
+          // Individuelle Checkboxen aktivieren
+          const maxIndex = type === 'torch' ? 1 : 2;
+          for (let i = 0; i <= maxIndex; i++) {
+            const checkbox = document.getElementById(`${type}-${player.id}-${i}`);
+            if (checkbox) {
+              checkbox.disabled = false;
+              checkbox.checked = player.treasure[type][i];
+            }
+          }
+        } else {
+          categoryDiv.classList.add('disabled');
+        }
+      });
+    }
+
+    // NEU: Synchronisierte Spieler bereinigen
+    function clearSyncedPlayers() {
+      const syncedPlayers = players.filter(p => !p.isOwn);
+      syncedPlayers.forEach(player => {
+        const dashboard = document.getElementById(`player-${player.id}`);
+        if (dashboard) {
+          dashboard.remove();
+        }
+      });
+      
+      players = players.filter(p => p.isOwn);
+    }
 
     function updateTimerDisplay() {
       const showTimer = document.getElementById('toggleTimer').checked;
       const timerContainer = document.getElementById('countdownContainer');
       const timerSection = document.getElementById('timerSection');
-
+      
       if (showTimer) {
         timerContainer.classList.remove('hidden');
         timerSection.style.display = 'block';
@@ -1270,20 +1311,35 @@
 
     function rollAndCalc() {
       const values = rollValues(5);
-
+      
       // Synchronisiere Würfelwurf falls verbunden
       if (syncClient && syncClient.currentRoomId) {
         syncClient.syncDiceRoll(values);
       }
-
+      
       displayRoll(values);
     }
+
+    // Event Listeners aktualisieren
+    document.getElementById("toggleFifth").addEventListener("change", updateFifthDisplay);
+    document.getElementById("toggleStats").addEventListener("change", updateStatsDisplay);
+    document.getElementById("toggleTimer").addEventListener("change", updateTimerDisplay);
+    document.getElementById("togglePlayers").addEventListener("change", updatePlayersDisplay);
+
+    // Würfel-Modus Event Listeners
+    document.getElementById("diceMode-auto").addEventListener("change", updateDiceMode);
+    document.getElementById("diceMode-manual").addEventListener("change", updateDiceMode);
+    document.getElementById("applyManualDice").addEventListener("click", applyManualDice);
+
+    // Spieler-Management Event Listeners
+    document.getElementById("addPlayer").addEventListener("click", addPlayer);
+    document.getElementById("resetAllPlayers").addEventListener("click", resetAllPlayers);
 
     // Toggle-Funktionen für die neuen Optionen
     function updateStatsDisplay() {
       const showStats = document.getElementById('toggleStats').checked;
       const statsElement = document.getElementById('stats');
-
+      
       if (showStats && lastValues.length > 0) {
         // Neu berechnen und anzeigen
         displayRoll(lastValues);
@@ -1308,9 +1364,9 @@
       const manualSection = document.getElementById('manualDiceSection');
       const diceRow = document.getElementById('diceRow');
       const modeInfo = document.getElementById('diceModeInfo');
-
+      
       currentDiceMode = autoMode ? 'auto' : 'manual';
-
+      
       if (autoMode) {
         manualSection.style.display = 'none';
         diceRow.className = 'dice-row auto-mode';
@@ -1319,7 +1375,7 @@
         manualSection.style.display = 'block';
         diceRow.className = 'dice-row manual-mode';
         modeInfo.textContent = 'Stellen Sie die Würfelwerte manuell ein und übernehmen Sie sie';
-
+        
         // Setze manuelle Werte auf aktuelle Würfelwerte falls vorhanden
         if (lastValues.length > 0) {
           lastValues.forEach((value, index) => {
@@ -1333,7 +1389,7 @@
     function setDiceValue(diceIndex, value) {
       const numValue = parseInt(value);
       manualDiceValues[diceIndex - 1] = numValue;
-
+      
       // Bestimme die korrekte Würfel-ID
       let diceId;
       if (diceIndex === 5) {
@@ -1341,7 +1397,7 @@
       } else {
         diceId = `d${diceIndex}`;
       }
-
+      
       // Direkt den Würfel zur entsprechenden Zahl drehen
       animateDiceToValue(diceId, numValue);
     }
@@ -1349,12 +1405,12 @@
     function applyManualDice() {
       // Manuelle Werte als Würfelergebnis setzen
       displayRoll([...manualDiceValues]);
-
+      
       // Synchronisiere falls verbunden
       if (syncClient && syncClient.currentRoomId) {
         syncClient.syncDiceRoll([...manualDiceValues]);
       }
-
+      
       // Menü schließen
       document.getElementById('menuOverlay').classList.remove('show');
     }
@@ -1373,21 +1429,6 @@
         list2.innerHTML = "";
       }
     }
-
-    // Event Listeners aktualisieren
-    document.getElementById("toggleFifth").addEventListener("change", updateFifthDisplay);
-    document.getElementById("toggleStats").addEventListener("change", updateStatsDisplay);
-    document.getElementById("toggleTimer").addEventListener("change", updateTimerDisplay);
-    document.getElementById("togglePlayers").addEventListener("change", updatePlayersDisplay);
-
-    // Würfel-Modus Event Listeners
-    document.getElementById("diceMode-auto").addEventListener("change", updateDiceMode);
-    document.getElementById("diceMode-manual").addEventListener("change", updateDiceMode);
-    document.getElementById("applyManualDice").addEventListener("click", applyManualDice);
-
-    // Spieler-Management Event Listeners
-    document.getElementById('addPlayer').addEventListener('click', addPlayer);
-    document.getElementById('resetAllPlayers').addEventListener('click', resetAllPlayers);
 
     // Event Listeners
     document.getElementById('startTimer').addEventListener('click', startTimer);
@@ -1414,22 +1455,9 @@
       document.getElementById('menuOverlay').classList.remove('show');
     });
 
-    document.getElementById('createRoom').addEventListener('click', () => {
-      syncClient.createRoom();
-    });
-    document.getElementById('joinRoom').addEventListener('click', () => {
-      const roomId = document.getElementById('roomIdInput').value.trim();
-      if (!roomId) {
-        alert('Bitte Raum-ID eingeben');
-        return;
-      }
-      syncClient.joinRoom(roomId);
-    });
-
-    document.getElementById('leaveRoom').addEventListener('click', () => {
-      syncClient.leaveRoom();
-      updateRoomInfo({});
-    });
+    document.getElementById('createRoom').addEventListener('click', createRoom);
+    document.getElementById('joinRoom').addEventListener('click', joinRoom);
+    document.getElementById('leaveRoom').addEventListener('click', leaveRoom);
     document.getElementById('copyRoomId').addEventListener('click', copyRoomId);
 
     // Dark Mode Toggle
@@ -1489,9 +1517,6 @@
     checkURLParams();
     initSyncClient();
     rollAndCalc();
-    updatePlayerStatus();
-    console.log('DDD Sync Player Management initialized');
-
   </script>
 </body>
 </html>
