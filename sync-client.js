@@ -149,35 +149,39 @@ class DDDSyncClient {
     }
   }
 
-  handleMessage(message) {
-    console.log('Received message:', message);
+// Erweiterte handleMessage Methode für bessere Player-Updates
+handleMessage(message) {
+  console.log('Received message:', message.type, message);
 
-    switch (message.type) {
-      case 'dice-roll':
-        if (this.onDiceReceived) {
-          this.onDiceReceived(message.values);
-        }
-        this.showNotification('🎲 Synchronisierter Wurf erhalten!');
-        break;
+  switch (message.type) {
+    case 'dice-roll':
+      if (this.onDiceReceived) {
+        this.onDiceReceived(message.values);
+      }
+      this.showNotification('🎲 Synchronisierter Wurf erhalten!');
+      break;
 
-      case 'timer-sync':
-        if (this.onTimerSync) {
-          this.onTimerSync(message.timerState);
-        }
-        break;
+    case 'timer-sync':
+      if (this.onTimerSync) {
+        this.onTimerSync(message.timerState);
+      }
+      break;
 
-      case 'players-update': // NEU
-        if (this.onPlayersReceived) {
-          this.onPlayersReceived(message.players);
-        }
+    case 'players-update':
+      if (this.onPlayersReceived) {
+        console.log('Received players-update message with', message.players.length, 'players');
+        this.onPlayersReceived(message.players);
+      }
+      // Nur Benachrichtigung anzeigen wenn es nicht die eigene Änderung war
+      if (message.fromSession !== this.sessionId) {
         this.showNotification('👥 Spielerdaten aktualisiert!');
-        break;
+      }
+      break;
 
-      default:
-        console.log('Unknown message type:', message.type);
-    }
+    default:
+      console.log('Unknown message type:', message.type);
   }
-
+}
   // Öffentliche API
   async createRoom() {
     if (!this.isConnected) {
@@ -305,34 +309,53 @@ class DDDSyncClient {
   }
 
   // NEU: Spieler synchronisieren
-  async syncPlayers(playersData) {
-    if (!this.isConnected || !this.currentRoomId || !this.sessionId) {
-      return;
-    }
-
-    try {
-      console.log('Syncing players:', playersData);
-      const response = await this.makeRequest('/sync-players', {
-        roomId: this.currentRoomId,
-        sessionId: this.sessionId,
-        players: playersData
-      }, 'POST');
-      
-      if (response.success) {
-        this.participantCount = response.participantCount;
-        this.activePlayerCount = response.activePlayerCount;
-        this.updateRoomInfo();
-        
-        // Aktualisierte Spielerdaten weitergeben
-        if (response.players && this.onPlayersReceived) {
-          this.onPlayersReceived(response.players);
-        }
-      }
-    } catch (error) {
-      console.error('Sync players failed:', error);
-    }
+async syncPlayers(playersData) {
+  if (!this.isConnected || !this.currentRoomId || !this.sessionId) {
+    console.warn('Cannot sync players - not connected or no room');
+    return;
   }
 
+  try {
+    console.log('Syncing players to server:', playersData.map(p => ({
+      name: p.name,
+      sessionId: p.sessionId,
+      isOwn: p.isOwn,
+      isActive: p.isActive
+    })));
+    
+    const response = await this.makeRequest('/sync-players', {
+      roomId: this.currentRoomId,
+      sessionId: this.sessionId,
+      players: playersData  // Array von Spielern für diese Session
+    }, 'POST');
+    
+    if (response.success) {
+      this.participantCount = response.participantCount;
+      this.activePlayerCount = response.activePlayerCount;
+      this.updateRoomInfo();
+      
+      console.log('Player sync successful. Updated counts:', {
+        participants: response.participantCount,
+        activePlayers: response.activePlayerCount,
+        totalPlayersInResponse: response.players ? response.players.length : 0
+      });
+      
+      // Aktualisierte Spielerdaten weitergeben
+      // WICHTIG: Nicht die eigenen Daten überschreiben
+      if (response.players && this.onPlayersReceived) {
+        // Nur Spielerdaten von anderen Sessions weiterleiten
+        const foreignPlayers = response.players.filter(p => p.sessionId !== this.sessionId);
+        if (foreignPlayers.length > 0) {
+          this.onPlayersReceived(response.players); // Aber alle Spieler senden für vollständige Synchronisation
+        }
+      }
+    } else {
+      console.error('Player sync failed:', response.error || 'Unknown error');
+    }
+  } catch (error) {
+    console.error('Sync players request failed:', error);
+  }
+}
   ping() {
     return this.testConnection();
   }
@@ -424,18 +447,20 @@ class DDDSyncClient {
     this.activePlayerCount = 0;
   }
 
-  getDebugInfo() {
-    return {
-      serverUrl: this.serverUrl,
-      isConnected: this.isConnected,
-      currentRoomId: this.currentRoomId,
-      sessionId: this.sessionId,
-      participantCount: this.participantCount,
-      activePlayerCount: this.activePlayerCount,
-      pollDelay: this.pollDelay,
-      isPolling: !!this.pollInterval
-    };
-  }
+// Debug-Info erweitern
+getDebugInfo() {
+  return {
+    serverUrl: this.serverUrl,
+    isConnected: this.isConnected,
+    currentRoomId: this.currentRoomId,
+    sessionId: this.sessionId,
+    participantCount: this.participantCount,
+    activePlayerCount: this.activePlayerCount,
+    pollDelay: this.pollDelay,
+    isPolling: !!this.pollInterval,
+    lastPollTimestamp: this.lastPollTimestamp,
+    lastReceivedPlayers: this.lastReceivedPlayers ? this.lastReceivedPlayers.length : 0
+  };
 }
 
 // Utility classes bleiben unverändert
