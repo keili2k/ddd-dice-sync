@@ -1041,114 +1041,83 @@
       }
     }
 
-    function updatePlayerName(playerId, newName) {
-      const player = players.find(p => p.id === playerId);
-      if (player && player.isOwn) {
-        player.name = newName;
-        if (syncClient && syncClient.currentRoomId) {
-          syncPlayerData();
-        }
+// 2. Verbesserte updatePlayerName Funktion
+function updatePlayerName(playerId, newName) {
+  const player = players.find(p => p.id === playerId);
+  if (player && player.isOwn) {
+    console.log(`Updating player ${playerId} name from "${player.name}" to "${newName}"`);
+    player.name = newName;
+    
+    // Sofort synchronisieren
+    if (syncClient && syncClient.currentRoomId) {
+      syncPlayerData();
+    }
+  } else {
+    console.warn('Cannot update name - not own player:', playerId, player);
+  }
+}
+// 6. Alle anderen Update-Funktionen auch sicherstellen dass sie syncPlayerData aufrufen
+function updatePlayerHealth(playerId, health) {
+  const player = players.find(p => p.id === playerId);
+  if (player && player.isOwn) {
+    player.health = health;
+    syncPlayerData(); // Sofort synchronisieren
+  }
+}
+
+function updateBlackDie(playerId, index, checked) {
+  const player = players.find(p => p.id === playerId);
+  if (player && player.isOwn) {
+    player.blackDice[index] = checked;
+    syncPlayerData(); // Sofort synchronisieren
+  }
+}
+
+function updateTreasureCategory(playerId, type, checked) {
+  const player = players.find(p => p.id === playerId);
+  if (!player || !player.isOwn) return;
+
+  if (checked) {
+    const selectedCount = Object.values(player.treasureCategories).filter(Boolean).length;
+    if (selectedCount >= 2) {
+      document.getElementById(`category-${type}-${playerId}`).checked = false;
+      alert('Maximal 2 von 3 Schatztruhen-Kategorien können gewählt werden!');
+      return;
+    }
+  }
+
+  player.treasureCategories[type] = checked;
+  
+  const maxItems = type === 'torch' ? 1 : 2;
+  for (let i = 0; i <= maxItems; i++) {
+    const checkbox = document.getElementById(`${type}-${playerId}-${i}`);
+    if (checkbox) {
+      checkbox.disabled = !checked;
+      if (!checked) {
+        checkbox.checked = false;
+        player.treasure[type][i] = false;
       }
     }
+  }
 
-    function updatePlayerHealth(playerId, health) {
-      const player = players.find(p => p.id === playerId);
-      if (player && player.isOwn) {
-        player.health = health;
-        if (syncClient && syncClient.currentRoomId) {
-          syncPlayerData();
-        }
-      }
-    }
+  const categoryDiv = document.getElementById(`treasure-${type}-${playerId}`);
+  if (checked) {
+    categoryDiv.classList.remove('disabled');
+  } else {
+    categoryDiv.classList.add('disabled');
+  }
 
-    function updateBlackDie(playerId, index, checked) {
-      const player = players.find(p => p.id === playerId);
-      if (player && player.isOwn) {
-        player.blackDice[index] = checked;
-        if (syncClient && syncClient.currentRoomId) {
-          syncPlayerData();
-        }
-      }
-    }
+  updateTreasureCategoryStates(playerId);
+  syncPlayerData(); // Sofort synchronisieren
+}
 
-    function updateTreasureCategory(playerId, type, checked) {
-      const player = players.find(p => p.id === playerId);
-      if (!player || !player.isOwn) return;
-
-      if (checked) {
-        // Prüfen ob bereits 2 Kategorien gewählt sind
-        const selectedCount = Object.values(player.treasureCategories).filter(Boolean).length;
-        if (selectedCount >= 2) {
-          // Checkbox zurücksetzen
-          document.getElementById(`category-${type}-${playerId}`).checked = false;
-          alert('Maximal 2 von 3 Schatztruhen-Kategorien können gewählt werden!');
-          return;
-        }
-      }
-
-      player.treasureCategories[type] = checked;
-      
-      // Aktiviere/deaktiviere die individuellen Checkboxen
-      const maxItems = type === 'torch' ? 1 : 2;
-      for (let i = 0; i <= maxItems; i++) {
-        const checkbox = document.getElementById(`${type}-${playerId}-${i}`);
-        if (checkbox) {
-          checkbox.disabled = !checked;
-          if (!checked) {
-            checkbox.checked = false;
-            player.treasure[type][i] = false;
-          }
-        }
-      }
-
-      // Visuelles Feedback für Kategorie
-      const categoryDiv = document.getElementById(`treasure-${type}-${playerId}`);
-      if (checked) {
-        categoryDiv.classList.remove('disabled');
-      } else {
-        categoryDiv.classList.add('disabled');
-      }
-
-      // Andere Kategorien prüfen und ggf. sperren
-      updateTreasureCategoryStates(playerId);
-
-      if (syncClient && syncClient.currentRoomId) {
-        syncPlayerData();
-      }
-    }
-
-    function updateTreasureCategoryStates(playerId) {
-      const player = players.find(p => p.id === playerId);
-      if (!player) return;
-
-      const selectedCount = Object.values(player.treasureCategories).filter(Boolean).length;
-      
-      ['heart', 'torch', 'dice'].forEach(type => {
-        const categoryCheckbox = document.getElementById(`category-${type}-${playerId}`);
-        const categoryDiv = document.getElementById(`treasure-${type}-${playerId}`);
-        
-        if (!player.treasureCategories[type] && selectedCount >= 2) {
-          // Kategorie sperren
-          categoryCheckbox.disabled = true;
-          categoryDiv.classList.add('disabled');
-        } else if (!player.treasureCategories[type]) {
-          // Kategorie entsperren
-          categoryCheckbox.disabled = false;
-          categoryDiv.classList.remove('disabled');
-        }
-      });
-    }
-
-    function updateTreasure(playerId, type, index, checked) {
-      const player = players.find(p => p.id === playerId);
-      if (player && player.isOwn && player.treasureCategories[type]) {
-        player.treasure[type][index] = checked;
-        if (syncClient && syncClient.currentRoomId) {
-          syncPlayerData();
-        }
-      }
-    }
-
+function updateTreasure(playerId, type, index, checked) {
+  const player = players.find(p => p.id === playerId);
+  if (player && player.isOwn && player.treasureCategories[type]) {
+    player.treasure[type][index] = checked;
+    syncPlayerData(); // Sofort synchronisieren
+  }
+}
     function resetAllPlayers() {
       if (confirm('Alle Spielerdaten zurücksetzen?')) {
         // Nur eigene Spieler zurücksetzen
@@ -1186,98 +1155,171 @@
       }
     }
 
-    function syncPlayerData() {
-      if (syncClient && syncClient.currentRoomId) {
-        const ownPlayers = players.filter(p => p.isOwn);
-        syncClient.syncPlayers(ownPlayers);
+// 1. Verbesserte syncPlayerData Funktion
+function syncPlayerData() {
+  if (syncClient && syncClient.currentRoomId) {
+    const ownPlayers = players.filter(p => p.isOwn);
+    console.log('Syncing own players:', ownPlayers); // Debug
+    
+    // Nur eigene Spieler senden
+    syncClient.syncPlayers(ownPlayers);
+  }
+}
+
+// 3. Erweiterte receivePlayerData Funktion
+function receivePlayerData(playersData) {
+  console.log('Received player data:', playersData);
+  
+  // Bestehende fremde Spieler merken
+  const existingForeignPlayers = players.filter(p => !p.isOwn);
+  
+  playersData.forEach(syncedPlayer => {
+    // Eigene Spieler ignorieren (werden nicht überschrieben)
+    if (syncedPlayer.sessionId === syncClient.sessionId) {
+      console.log('Ignoring own player from sync:', syncedPlayer.name);
+      return;
+    }
+    
+    let localPlayer = players.find(p => p.sessionId === syncedPlayer.sessionId);
+    
+    if (!localPlayer) {
+      // Neuer Spieler von anderem Client
+      console.log('Adding new foreign player:', syncedPlayer.name);
+      const playerId = nextPlayerId++;
+      const dashboard = createPlayerDashboard(
+        playerId, 
+        syncedPlayer.name, 
+        syncedPlayer.sessionId, 
+        syncedPlayer.isActive
+      );
+      const playersContainer = document.getElementById('playersContainer');
+      playersContainer.appendChild(dashboard);
+      
+      localPlayer = players[players.length - 1];
+    } else {
+      // Bestehenden fremden Spieler aktualisieren
+      console.log(`Updating foreign player: "${localPlayer.name}" -> "${syncedPlayer.name}"`);
+      
+      // Alle Daten übernehmen (außer id und isOwn)
+      const oldId = localPlayer.id;
+      const oldIsOwn = localPlayer.isOwn;
+      
+      Object.assign(localPlayer, syncedPlayer, { 
+        id: oldId, 
+        isOwn: oldIsOwn
+      });
+      
+      // UI aktualisieren
+      updatePlayerDashboardUI(localPlayer);
+      
+      // WICHTIG: Name im Input-Feld aktualisieren
+      const nameInput = document.querySelector(`#player-${localPlayer.id} .player-name`);
+      if (nameInput) {
+        nameInput.value = localPlayer.name;
       }
     }
-
-    // NEU: Empfangene Spielerdaten verarbeiten
-    function receivePlayerData(playersData) {
-      console.log('Received player data:', playersData);
-      
-      playersData.forEach(syncedPlayer => {
-        let localPlayer = players.find(p => p.sessionId === syncedPlayer.sessionId);
-        
-        if (!localPlayer && syncedPlayer.sessionId !== syncClient.sessionId) {
-          // Neuer Spieler von anderem Client
-          const playerId = nextPlayerId++;
-          const dashboard = createPlayerDashboard(
-            playerId, 
-            syncedPlayer.name, 
-            syncedPlayer.sessionId, 
-            syncedPlayer.isActive
-          );
-          const playersContainer = document.getElementById('playersContainer');
-          playersContainer.appendChild(dashboard);
-          
-          localPlayer = players[players.length - 1];
-        }
-        
-        // Daten aktualisieren (nur wenn es nicht der eigene ist)
-        if (localPlayer && localPlayer.sessionId !== syncClient.sessionId) {
-          Object.assign(localPlayer, syncedPlayer, { 
-            id: localPlayer.id, 
-            isOwn: false
-          });
-          updatePlayerDashboardUI(localPlayer);
-        }
-      });
-      
-      // Entferne Spieler die nicht mehr da sind
-      const currentSessionIds = playersData.map(p => p.sessionId);
-      currentSessionIds.push(syncClient.sessionId); // Eigene Session behalten
-      
-      const playersToRemove = players.filter(p => !currentSessionIds.includes(p.sessionId));
-      
-      playersToRemove.forEach(player => {
-        const dashboard = document.getElementById(`player-${player.id}`);
-        if (dashboard) {
-          dashboard.remove();
-        }
-      });
-      
-      players = players.filter(p => currentSessionIds.includes(p.sessionId));
+  });      
+  // Entferne Spieler die nicht mehr da sind (außer eigene)
+  const currentForeignSessionIds = playersData
+    .filter(p => p.sessionId !== syncClient.sessionId)
+    .map(p => p.sessionId);
+  
+  const playersToRemove = existingForeignPlayers.filter(p => 
+    !currentForeignSessionIds.includes(p.sessionId)
+  );
+  
+  playersToRemove.forEach(player => {
+    console.log('Removing disconnected player:', player.name);
+    const dashboard = document.getElementById(`player-${player.id}`);
+    if (dashboard) {
+      dashboard.remove();
     }
-
-    // NEU: Player Dashboard UI aktualisieren
-    function updatePlayerDashboardUI(player) {
-      // Health aktualisieren
-      if (player.health === 'dead') {
-        document.getElementById(`health-${player.id}-dead`).checked = true;
-      } else {
-        document.getElementById(`health-${player.id}-${player.health}`).checked = true;
-      }
-      
-      // Schwarze Würfel aktualisieren
-      player.blackDice.forEach((checked, index) => {
-        document.getElementById(`blackdie-${player.id}-${index}`).checked = checked;
-      });
-      
-      // Schatztruhen-Kategorien aktualisieren
-      Object.entries(player.treasureCategories).forEach(([type, checked]) => {
-        document.getElementById(`category-${type}-${player.id}`).checked = checked;
+  });
+  
+  // Players Array bereinigen
+  players = players.filter(p => 
+    p.isOwn || currentForeignSessionIds.includes(p.sessionId)
+  );
+  
+  updatePlayerStatus();
+}
+// 4. Erweiterte updatePlayerDashboardUI Funktion
+function updatePlayerDashboardUI(player) {
+  console.log('Updating UI for player:', player.name);
+  
+  // Name aktualisieren
+  const nameInput = document.querySelector(`#player-${player.id} .player-name`);
+  if (nameInput && nameInput.value !== player.name) {
+    nameInput.value = player.name;
+    console.log(`Updated name input for player ${player.id}: ${player.name}`);
+  }
+  
+  // Health aktualisieren
+  document.querySelectorAll(`input[name="health-${player.id}"]`).forEach(radio => {
+    radio.checked = (radio.value === String(player.health));
+  });
+  
+  // Schwarze Würfel aktualisieren
+  player.blackDice.forEach((checked, index) => {
+    const checkbox = document.getElementById(`blackdie-${player.id}-${index}`);
+    if (checkbox) checkbox.checked = checked;
+  });
+  
+  // Schatztruhen-Kategorien aktualisieren
+  Object.entries(player.treasureCategories).forEach(([type, checked]) => {
+    const categoryCheckbox = document.getElementById(`category-${type}-${player.id}`);
+    const categoryDiv = document.getElementById(`treasure-${type}-${player.id}`);
+    
+    if (categoryCheckbox) categoryCheckbox.checked = checked;
+    
+    if (categoryDiv) {
+      if (checked) {
+        categoryDiv.classList.remove('disabled');
         
-        const categoryDiv = document.getElementById(`treasure-${type}-${player.id}`);
-        if (checked) {
-          categoryDiv.classList.remove('disabled');
-          
-          // Individuelle Checkboxen aktivieren
-          const maxIndex = type === 'torch' ? 1 : 2;
-          for (let i = 0; i <= maxIndex; i++) {
-            const checkbox = document.getElementById(`${type}-${player.id}-${i}`);
-            if (checkbox) {
-              checkbox.disabled = false;
-              checkbox.checked = player.treasure[type][i];
-            }
+        // Individuelle Checkboxen aktivieren und Werte setzen
+        const maxIndex = type === 'torch' ? 1 : 2;
+        for (let i = 0; i <= maxIndex; i++) {
+          const checkbox = document.getElementById(`${type}-${player.id}-${i}`);
+          if (checkbox) {
+            checkbox.disabled = false;
+            checkbox.checked = player.treasure[type][i];
           }
-        } else {
-          categoryDiv.classList.add('disabled');
         }
-      });
+      } else {
+        categoryDiv.classList.add('disabled');
+      }
     }
+  });
+}
 
+// 5. Debug-Funktion für Problemdiagnose
+function debugPlayerSync() {
+  console.log('=== Player Sync Debug ===');
+  console.log('Own session ID:', syncClient?.sessionId);
+  console.log('Current players:', players.map(p => ({
+    id: p.id,
+    name: p.name,
+    sessionId: p.sessionId,
+    isOwn: p.isOwn
+  })));
+  console.log('Own players for sync:', players.filter(p => p.isOwn).map(p => ({
+    name: p.name,
+    sessionId: p.sessionId
+  })));
+}
+
+// Debug-Funktion im Menü verfügbar machen (falls Debug-Sektion sichtbar)
+if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+  // Zusätzlichen Debug-Button hinzufügen
+  const debugSection = document.getElementById('debugSection');
+  if (debugSection) {
+    const debugPlayerButton = document.createElement('button');
+    debugPlayerButton.textContent = 'Debug Spieler-Sync';
+    debugPlayerButton.className = 'menu-action-button secondary small';
+    debugPlayerButton.onclick = debugPlayerSync;
+    debugSection.appendChild(debugPlayerButton);
+  }
+}
     // NEU: Synchronisierte Spieler bereinigen
     function clearSyncedPlayers() {
       const syncedPlayers = players.filter(p => !p.isOwn);
