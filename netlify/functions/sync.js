@@ -40,33 +40,89 @@ class Room {
     this.lastActivity = new Date();
   }
 
-  updatePlayerData(sessionId, playerData) {
-    // Limitiere auf maximal 4 aktive Spieler
-    const activePlayers = Array.from(this.players.values())
-      .filter(p => p.isActive).length;
+  updatePlayerData(sessionId, playersArray) {
+    // Wichtig: playersArray ist ein Array von Spielern für diese Session
+    // Alle Spieler dieser Session ersetzen (nicht nur hinzufügen)
     
-    // Wenn mehr als 4 aktive Spieler und neuer Spieler aktiv sein will
-    if (activePlayers >= 4 && playerData.isActive && !this.players.has(sessionId)) {
-      playerData.isActive = false; // Zwinge zu inaktiv
+    // Lösche alte Spieler dieser Session
+    this.players.delete(sessionId);
+    
+    // Füge neue/aktualisierte Spieler hinzu
+    if (playersArray && playersArray.length > 0) {
+      // Aktivitätslimit prüfen
+      const activePlayersFromOtherSessions = Array.from(this.players.values())
+        .flat()
+        .filter(p => p.isActive).length;
+      
+      const updatedPlayers = playersArray.map(playerData => {
+        // Überprüfe ob dieser Spieler aktiv sein kann
+        const canBeActive = (activePlayersFromOtherSessions < 4) || playerData.isActive;
+        
+        return {
+          ...playerData,
+          sessionId: sessionId,
+          isActive: canBeActive,
+          lastUpdated: new Date()
+        };
+      });
+      
+      this.players.set(sessionId, updatedPlayers);
     }
-    
-    this.players.set(sessionId, {
-      ...playerData,
-      sessionId,
-      lastUpdated: new Date()
-    });
     
     this.lastActivity = new Date();
   }
 
   getPlayerData() {
-    return Array.from(this.players.values());
+    // Alle Spieler aus allen Sessions als flache Liste zurückgeben
+    const allPlayers = [];
+    for (const playersArray of this.players.values()) {
+      allPlayers.push(...playersArray);
+    }
+    return allPlayers;
   }
 
   getActivePlayerCount() {
-    return Array.from(this.players.values())
-      .filter(p => p.isActive).length;
+    return this.getPlayerData().filter(p => p.isActive).length;
   }
+
+}
+
+// Im sync-players Endpoint:
+if (path === '/sync-players' && method === 'POST') {
+  const { roomId, sessionId, players } = body;
+  const room = rooms.get(roomId);
+  
+  if (!room) {
+    return {
+      statusCode: 404,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ success: false, error: 'Raum nicht gefunden' })
+    };
+  }
+
+  room.updateParticipant(sessionId);
+  
+  // WICHTIG: players ist bereits ein Array von Spielern
+  // Spielerdaten für diese Session komplett aktualisieren
+  room.updatePlayerData(sessionId, players);
+  
+  // Message für andere Clients
+  room.addMessage({
+    type: 'players-update',
+    players: room.getPlayerData(), // Alle Spieler aller Sessions
+    fromSession: sessionId
+  });
+
+  return {
+    statusCode: 200,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      success: true,
+      participantCount: room.getParticipantCount(),
+      activePlayerCount: room.getActivePlayerCount(),
+      players: room.getPlayerData()
+    })
+  };
 
   getParticipantCount() {
     // Entferne inaktive Teilnehmer (älter als 5 Minuten)
